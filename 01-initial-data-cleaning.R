@@ -304,8 +304,69 @@ filled_med = filled_med %>%
   mutate(dose_increase_this_week = week_of_intervention > 1 & (dose_this_week > lag(dose_this_week))) %>% 
   ungroup() 
 
-#---------------- X -----------------#
-#---------------- X -----------------#
-#---------------- X -----------------#
-#---------------- X -----------------#
-#---------------- X -----------------#
+#---------------- Drop redundant or incomplete columns -----------------#
+
+#Keep the `xrace` column, which combines `race` and `isHispanic` (and drop those two)
+#Drop the `hcows` column, as it is redundant with `hwithdraw`
+#Drop the `edu`, `mar` (married), `falcohol`, and `fdrug` columns because they weren't included in all projects
+#Drop the `mg` column, because I've split it into different columns by drug
+
+initial_data_cleaning_no_outcomes_01 = filled_med %>% select(-race, -isHispanic, -hcows, -edu, -mar, -falcohol, -fdrug, -mg)
+
+#---------------- Create lists of column names -----------------#
+
+#Here, I'm creating lists of column names, that will be useful throughout the project
+#They will be altered as we create relapse outcomes and add those in
+
+demog = c("who", "sex", "age", "xrace")
+
+treatment_info = c("project", "site", "trt", "rand_dt", "end_of_detox", "switched_meds", "med_switch_date", "never_initiated")
+
+comorbidities = c(
+  "hwithdraw",
+  "alcdisorder",
+  "cocdisorder",
+  "hasBrainDamage",
+  "hasEpilepsy",
+  "hasSchiz",
+  "hasBipolar",
+  "hasAnxPan",
+  "hasMajorDep",
+  "bamphetamine30_base",
+  "bcannabis30_base",
+  "bbenzo30_base",
+  "ivdrug"
+)
+
+outcomes = c(
+  # "relapse_overall",
+  # "relapse_date",
+  # "relapse_12wk_date",
+  # "relapse_24wk_date",
+  "opioiduse12",
+  "fusedt12",
+  "opioiduse24",
+  "fusedt24"
+)
+
+visit_data = c(
+  # "use_today",
+  "when",
+  "day_of_intervention",
+  "medicine",
+  "selfopioid",
+  "uopioid",
+  "bup_dose",
+  "naloxone_dose",
+  "met_dose",
+  "naltrexone_dose",
+  "any_dose"
+)
+
+weekly_indicators = c(
+  # "use_this_week",
+  # "relapse_this_week",
+  "week_of_intervention",
+  "dose_this_week",
+  "dose_increase_this_week"
+)
