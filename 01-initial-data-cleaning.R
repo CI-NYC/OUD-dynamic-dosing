@@ -1,10 +1,10 @@
-#initial data cleaning file
+#Initial data cleaning file.
+#starts with raw visit-level data,
+#and also ends with visit-level data, with information clarified and errors corrected
 
 library(tidyverse)
 library(stringr)
 library(lubridate)
-#library(data.table)
-#library(diffdf) #to find differences between two dataframes
 
 #---------------- Importing the data -----------------#
 
@@ -180,7 +180,7 @@ added_dates = added_dates %>%
                                when - 1,
                                when)))
 
-#Add a new patient-level variable: `end_of_detox` signaling 3 weeks after their first visit, when the detoxification stage is over.  ``` {r new-vbl-endtimeearly}
+#Add a new patient-level variable: `end_of_detox` signaling 3 weeks after their first visit, when the detoxification stage is over.
 added_dates = added_dates %>% 
   group_by(who) %>% 
   mutate(end_of_detox = min(when) + 21)
@@ -289,20 +289,35 @@ filled_med = split_doses %>%
   mutate(any_dose = ifelse(bup_dose > 0 | naloxone_dose > 0 | met_dose > 0 | naltrexone_dose > 0, TRUE, FALSE),
          any_dose = ifelse(is.na(any_dose), FALSE, any_dose))
 
-#---------------- New columns for: dose this week, dose increase this week -----------------#
+#---------------- New columns for: doseage by week -----------------#
 
-filled_med = filled_med %>%
+#Make new colums for: max_dose_this_week, any_dose_this_week, min_nonzero_dose_this_week, dose_change_during_week
+#Moving forward, the dose perscribed this week will be understood to be max_dose_this_week
+#(but we can use the other columns to look into what's happening on a weekly basis)
+
+visits_with_weekly_dose_added = filled_med %>%
   group_by(who, week_of_intervention) %>% 
-  # just pick the first dose given this week
-  mutate(dose_this_week = case_when(medicine == "bup" ~ bup_dose,
-                                    medicine == "met" ~ met_dose,
-                                    medicine == "nal" ~ naltrexone_dose,
-                                    TRUE ~ 0)) %>% 
+  mutate(max_dose_this_week = case_when(medicine == "bup" ~ max(bup_dose),
+                                    medicine == "met" ~ max(met_dose),
+                                    medicine == "nal" ~ max(naltrexone_dose),
+                                    TRUE ~ 0),
+         any_dose_this_week = max_dose_this_week > 0,
+         #create a dummy variable to weed out the zero doses
+         zero_dose_add_1000 = case_when(medicine == "bup" ~ as.numeric(ifelse(bup_dose == 0, 1000, bup_dose)),
+                                        medicine == "met" ~ as.numeric(ifelse(met_dose == 0, 1000, met_dose)),
+                                        medicine == "nal" ~ as.numeric(naltrexone_dose),
+                                        TRUE ~ 0),
+         min_nonzero_dose_this_week = ifelse(any_dose_this_week,
+                                             case_when(medicine == "bup" ~ min(zero_dose_add_1000),
+                                             medicine == "met" ~ min(zero_dose_add_1000),
+                                             medicine == "nal" ~ min(naltrexone_dose),
+                                             TRUE ~ 0),
+                                             0),
+         min_nonzero_dose_this_week = ifelse(min_nonzero_dose_this_week == 1000, 0, min_nonzero_dose_this_week),
+         dose_change_during_week = max_dose_this_week != min_nonzero_dose_this_week
+         ) %>% 
   ungroup() %>% 
-  group_by(who) %>% 
-  # if this week's dose is greater than last week's
-  mutate(dose_increase_this_week = week_of_intervention > 1 & (dose_this_week > lag(dose_this_week))) %>% 
-  ungroup() 
+  select(-zero_dose_add_1000)
 
 #---------------- Drop redundant or incomplete columns -----------------#
 
@@ -311,7 +326,8 @@ filled_med = filled_med %>%
 #Drop the `edu`, `mar` (married), `falcohol`, and `fdrug` columns because they weren't included in all projects
 #Drop the `mg` column, because I've split it into different columns by drug
 
-initial_data_cleaning_no_outcomes_01 = filled_med %>% select(-race, -isHispanic, -hcows, -edu, -mar, -falcohol, -fdrug, -mg)
+initial_data_cleaning_no_outcomes_01 = visits_with_weekly_dose_added %>% 
+  select(-race, -isHispanic, -hcows, -edu, -mar, -falcohol, -fdrug, -mg)
 
 #---------------- Create lists of column names -----------------#
 
@@ -366,7 +382,10 @@ visit_data = c(
 weekly_indicators = c(
   # "use_this_week",
   # "relapse_this_week",
+  # "dose_change_since_last_week", #???
   "week_of_intervention",
-  "dose_this_week",
-  "dose_increase_this_week"
+  "max_dose_this_week", 
+  "any_dose_this_week", 
+  "min_nonzero_dose_this_week", 
+  "dose_change_during_week"
 )

@@ -358,11 +358,10 @@ codebook = add_row(
   in_project_51 = TRUE
 )
 
-# NOTE: TODO - change this later once I've made a "better" dose-this-week function
 codebook = add_row(
   codebook,
-  variable = "dose_this_week",
-  description = "the dose of medicine given on the first day of this week",
+  variable = "max_dose_this_week",
+  description = "the largest dose given during that week of treatment",
   values = "number of mg",
   provenance = "added_by_us",
   calculated = TRUE,
@@ -374,9 +373,35 @@ codebook = add_row(
 
 codebook = add_row(
   codebook,
-  variable = "dose_increase_this_week",
-  description = "TRUE if this week's dose is higher than last week's",
-  values = "TRUE / FALSE",
+  variable = "any_dose_this_week",
+  description = "if any medicine was perscibed at any point during this week",
+  values = "TRUE if any doseages are nonzero",
+  provenance = "added_by_us",
+  calculated = TRUE,
+  level = "week",
+  in_project_27 = TRUE,
+  in_project_30 = TRUE,
+  in_project_51 = TRUE
+)
+
+codebook = add_row(
+  codebook,
+  variable = "min_nonzero_dose_this_week",
+  description = "the largest non-zero dose given during that week of treatment",
+  values = "number of mg (this is zero if all doses given were zero)",
+  provenance = "added_by_us",
+  calculated = TRUE,
+  level = "week",
+  in_project_27 = TRUE,
+  in_project_30 = TRUE,
+  in_project_51 = TRUE
+)
+
+codebook = add_row(
+  codebook,
+  variable = "dose_change_during_week",
+  description = "whether all of the non-zero doseages this week were the same or different",
+  values = "TRUE if the patient received varrying non-zero doseages during the week, FALSE otherwise",
   provenance = "added_by_us",
   calculated = TRUE,
   level = "week",
