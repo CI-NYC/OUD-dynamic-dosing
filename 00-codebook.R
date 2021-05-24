@@ -8,7 +8,7 @@
 #   values = "$$$VALS$$$",
 #   provenance = "added_by_us",
 #   calculated = TRUE,
-#   level = "patient" / "visit",
+#   level = "patient" / "visit" / "week",
 #   in_project_27 = TRUE, #or FALSE
 #   in_project_30 = TRUE, #or FALSE
 #   in_project_51 = TRUE #or FALSE
@@ -148,7 +148,7 @@ desc = data.frame(
   )
 )
 
-for (var in colnames(baseline_data_raw)) {
+for (var in rownames(desc)[1:31]) {
   codebook = add_row(
     codebook,
     variable = var,
@@ -170,48 +170,20 @@ for (var in colnames(baseline_data_raw)) {
   )
 }
 
-for (var in colnames(druguse_data_raw)) {
-  if (!(var %in% codebook$variable)) {
-    codebook = add_row(
-      codebook,
-      variable = var,
-      description = desc[var,1],
-      values = desc[var,2],
-      provenance = "druguse",
-      calculated = FALSE,
-      level = ifelse(var == "rand_dt", "patient", "visit"),
-      in_project_27 = TRUE,
-      in_project_30 = TRUE,
-      in_project_51 = TRUE
-    )
-  }
+for (var in rownames(desc)[32:37]) {
+  codebook = add_row(
+    codebook,
+    variable = var,
+    description = desc[var,1],
+    values = desc[var,2],
+    provenance = "druguse",
+    calculated = FALSE,
+    level = ifelse(var == "rand_dt", "patient", "visit"),
+    in_project_27 = TRUE,
+    in_project_30 = TRUE,
+    in_project_51 = TRUE
+  )
 }
-
-demog = c(
-  "isHispanic",
-  "race",
-  "sex" ,
-  "age",
-  "xrace",
-  "hcows",
-  "hwithdraw",
-  "alcdisorder",
-  "cocdisorder",
-  "hasBrainDamage",
-  "hasEpilepsy",
-  "hasSchiz",
-  "hasBipolar",
-  "hasAnxPan",
-  "hasMajorDep"   ,
-  "edu",
-  "mar",
-  "falcohol",
-  "fdrug",
-  "bamphetamine30_base",
-  "bcannabis30_base",
-  "bbenzo30_base",
-  "ivdrug"
-)
 
 #---------------- New variables from 01-initial-data-cleaning -----------------#
 

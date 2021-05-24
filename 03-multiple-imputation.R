@@ -20,6 +20,9 @@ patients_to_impute = patients_with_outcomes_02 %>%
 
 #---------------- Get set up for imputation -----------------#
 
+#note: we get a warning here ("Number of logged events: 2") but I think we can ignore it...
+#because we're just running a "fake" imputation to get the matrices set up,
+#and we know that there should be some issues like collinear columns
 setup = mice(patients_to_impute, maxit = 0) 
 my_methods = setup$method
 my_predMatrix = setup$predictorMatrix
@@ -30,11 +33,10 @@ my_predMatrix[, c("project")] = 0 #exclude b/c completely determined by site
 my_predMatrix[, c("end_of_detox")] = 0 #exclude b/c completely determined by rand_dt
 
 #alter the methods matrix, to exclude any variables we don't want to impute
-#NOTE: this is just to be safe -- all of the following should have complete information  (no missing)
-my_methods[all_of(demog)] = ""
-my_methods[all_of(treatment_info)] = ""
-my_methods[relapse_date] = ""
-
+#note: all of the following should have complete information  (no missing), so the code below is not necessary
+# my_methods[all_of(demog)] = ""
+# my_methods[all_of(treatment_info)] = ""
+# my_methods[relapse_date] = ""
 
 #---------------- Impute missing data -----------------#
 
@@ -43,3 +45,9 @@ patients_imputed_03 = mice(patients_to_impute, method = my_methods, predictorMat
 # #NOTE: this is how to access the different versions of the imputed data later
 # p1 = complete(patients_imputed_03, action = 1)
 # p2 = complete(patients_imputed_03, action = 2)
+
+#NOTE: we get warnings from the mice package in the form of loggedEvents
+#where some columns (usually treatment, site) get removed from the model
+#when imputing specific other variables that are closely connected
+#I don't think this is a problem, but we can read more here:
+# https://stefvanbuuren.name/fimd/sec-toomany.html#finding-problems-loggedevents
