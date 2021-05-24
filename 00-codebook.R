@@ -414,9 +414,61 @@ codebook = add_row(
 
 codebook = add_row(
   codebook,
+  variable = "relapse_date",
+  description = "the date we're considering to be the patient's first relapse date (survival outcome of interest)",
+  values = "date",
+  provenance = "added_by_us",
+  calculated = TRUE,
+  level = "patient",
+  in_project_27 = TRUE,
+  in_project_30 = TRUE,
+  in_project_51 = TRUE
+)
+
+codebook = add_row(
+  codebook,
+  variable = "use_today",
+  description = "whether or not there was non-study opioid use on that day",
+  values = "TRUE/FALSE",
+  provenance = "added_by_us",
+  calculated = TRUE,
+  level = "visit",
+  in_project_27 = TRUE,
+  in_project_30 = TRUE,
+  in_project_51 = TRUE
+)
+
+codebook = add_row(
+  codebook,
   variable = "relapse_this_week",
-  description = "TRUE if our calculated relapse date falls within this week",
-  values = "TRUE / FALSE",
+  description = "whether or not the relapse date occured during this week",
+  values = "TRUE/FALSE",
+  provenance = "added_by_us",
+  calculated = TRUE,
+  level = "week",
+  in_project_27 = TRUE,
+  in_project_30 = TRUE,
+  in_project_51 = TRUE
+)
+
+codebook = add_row(
+  codebook,
+  variable = "use_this_week",
+  description = "whether or not there was any non-study opioid use this week",
+  values = "TRUE/FALSE",
+  provenance = "added_by_us",
+  calculated = TRUE,
+  level = "week",
+  in_project_27 = TRUE,
+  in_project_30 = TRUE,
+  in_project_51 = TRUE
+)
+
+codebook = add_row(
+  codebook,
+  variable = "dose_this_week",
+  description = "the dosege we're counting as this week's doseage (currently: max dose this week)",
+  values = "mg",
   provenance = "added_by_us",
   calculated = TRUE,
   level = "week",
@@ -426,5 +478,6 @@ codebook = add_row(
 )
 
 #---------------- New variables from 03-multiple-imputation -----------------#
+# (none)
 
 #---------------- New variables from 04-ltmle-prep -----------------#
