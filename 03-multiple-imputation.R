@@ -30,6 +30,7 @@ my_predMatrix = setup$predictorMatrix
 #alter the prediction matrix, to exclude some variables from being predictors during imputation
 my_predMatrix[, c("who")] = 0
 my_predMatrix[, c("project")] = 0 #exclude b/c completely determined by site
+my_predMatrix[, c("medicine")] = 0 #exclude b/c completely determined by trt
 my_predMatrix[, c("end_of_detox")] = 0 #exclude b/c completely determined by rand_dt
 
 #alter the methods matrix, to exclude any variables we don't want to impute

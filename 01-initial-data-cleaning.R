@@ -336,7 +336,8 @@ initial_data_cleaning_no_outcomes_01 = visits_with_weekly_dose_added %>%
 
 demog = c("who", "sex", "age", "xrace")
 
-treatment_info = c("project", "site", "trt", "rand_dt", "end_of_detox", "switched_meds", "med_switch_date", "never_initiated")
+treatment_info = c("project", "site", "trt", "rand_dt", "end_of_detox", "medicine",
+                   "switched_meds", "med_switch_date", "never_initiated")
 
 comorbidities = c(
   "hwithdraw",
