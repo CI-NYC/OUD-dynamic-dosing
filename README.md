@@ -25,3 +25,4 @@ You will need to have installed the following R packages:
 2. Get some descriptive summaries of the data, such as a Table 1, or anything else to help contextualize the results
 3. Look into doseage changes within weeks vs. across weeks
 4. Provide output datasets as CSVs in addition to RData
+5. Double check that the codebook has the right values for factors (ex. 0 vs. no). Fill in missing codebook info.
