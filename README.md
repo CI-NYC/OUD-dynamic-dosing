@@ -13,8 +13,7 @@ You will need to have installed the following R packages:
 
 ## Steps:
 
-1. Run `05-one-step-data-prep.R`
-  - *(no need to run scripts 00 through 04, they won't necessarily work on their own)*
+1. Run `05-one-step-data-prep.R` *(no need to run scripts 00 through 04, they won't necessarily work on their own)*
 2. Take a look in your data folder, or open up R and run `load("clean_combined_data.RData")` to explore. Consider starting with the codebook.
 3. Run `06-ltmle-analysis.R` to produce plots. Look in your folder `Data/Plots` to find them.
 
