@@ -1,5 +1,7 @@
 #Codebook
 
+library(tidyverse)
+
 # # FOR ADDING NEW VARIABLES:
 # codebook = add_row(
 #   codebook,
