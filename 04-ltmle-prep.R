@@ -243,7 +243,10 @@ ltmle_case_prep = function(data, case) {
 }
 
 test_case_1 = ltmle_case_prep(ltmle_prep3, case1)
+test_case_2 = ltmle_case_prep(ltmle_prep3, case2)
+test_case_3 = ltmle_case_prep(ltmle_prep3, case3)
 test_case_4 = ltmle_case_prep(ltmle_prep3, case4)
+test_case_8 = ltmle_case_prep(ltmle_prep3, case8)
 
 # weekly_data_for_ltmle_04 = list()
 # for (case in cases_easy) {

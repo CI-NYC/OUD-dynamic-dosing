@@ -126,8 +126,6 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates) {
   estimates
 }
 
-aaaa = run_ltmle_case(test_case_1, patients_imputed_03)
-
 
 #---------------- Function: add imputed data & covariates list -----------------#
 
@@ -138,6 +136,10 @@ aaaa = run_ltmle_case(test_case_1, patients_imputed_03)
 #---------------- Function: make a plot of the results -----------------#
 
 #TODO: deal with the list/unlist problem in the first function, instead of this one
+#TODO: check if the order of columns in the first function is working as expected (by looking into summary(output))
+#TODO: re-do Anodes, Lnodes, Ynodes based on last week's conversation
+#TODO: incorporate checks about which weeks dont have enough data
+#TODO: prep for dynamic dosing rules with cutoffs
 
 plot_ltmle = function(estimates, title, id_number) {
 
@@ -188,7 +190,8 @@ plot_ltmle = function(estimates, title, id_number) {
   while (!is.null(dev.list()))  dev.off()
 }
 
-plot_ltmle(aaaa, case1$name, 01)
+plot_ltmle(run_ltmle_case(test_case_1, patients_imputed_03), test_case_1$name, 01)
+plot_ltmle(run_ltmle_case(test_case_4, patients_imputed_03), test_case_4$name, 04)
 
 # define a set of rule / filter combos
 # for each of them:
