@@ -159,7 +159,22 @@ ltmle_case_prep = function(data, case) {
   filtered_data = data %>% 
     filter(project %in% case[["projects"]] & medicine == case[["medicine"]])
   
-  #Step 2: check whether there are enough events in each week to include that week in the analysis
+  #Step 2: make "treatment node" approporiate for this case, Anodes: treatment_this_week
+  #  this takes into account the dose threshold (0 if we just care about any dose increase)
+  filtered_data = filtered_data %>% 
+    set_names(~ str_replace_all(., "dose_increase_this_week", "treatment_this_week"))
+  
+  for (week in 1:24) {
+    treatment_column_name = paste0("wk", week, ".treatment_this_week")
+    dose_column_name = paste0("wk", week, ".dose_this_week")
+    
+    filtered_data = filtered_data %>% 
+      mutate(!!treatment_column_name := #!!sym(treatment_column_name)
+               as.numeric((!!sym(treatment_column_name) == 1) & (!!sym(dose_column_name) >= case[["dose_threshold"]]))
+      )
+  }
+  
+  #Step 3: check whether there are enough events in each week to include that week in the analysis
 
   #Are there any weeks (of 4-24) where no-one's outcome changed (no new relapses)?
   #...If so, exclude those weeks from the analysis alltogether.
@@ -174,21 +189,21 @@ ltmle_case_prep = function(data, case) {
   
   #Are there any weeks with under 3 dose increases?
   #...If so, exclude those weeks from making the dynamic dosing rule
-  weeks_with_dose_increases = c()
+  weeks_with_treatments = c()
   for (w in 4:24) {
-    num_increases = sum(filtered_data[[sym(paste0("wk", w, ".dose_increase_this_week"))]])
+    num_increases = sum(filtered_data[[sym(paste0("wk", w, ".treatment_this_week"))]])
     if (num_increases >= 3) {
-      weeks_with_dose_increases = c(weeks_with_dose_increases, w)
+      weeks_with_treatments = c(weeks_with_treatments, w)
     }
   }
   
-  #Step 3: create the lists of Anodes, Lnodes, Ynodes, and abar
+  #Step 4: create the lists of Anodes, Lnodes, Ynodes, and abar
   
   #Anodes (treatment nodes) - each includes the treatment node for this and all previous weeks...
   #...restricted to weeks where a relapse outcome and a treatment were both possible (so, 4-24)
   Anodes = vector("list", length(outcome_weeks))
   for (i in 1:length(outcome_weeks)) {
-    Anodes[[i]] <- paste0("wk", outcome_weeks[1:i], ".dose_increase_this_week")
+    Anodes[[i]] <- paste0("wk", outcome_weeks[1:i], ".treatment_this_week")
   }
 
   #Lnodes (time-varying covariates) - each includes `dose_this_week` lagged by 1 (3-24)...
@@ -221,7 +236,7 @@ ltmle_case_prep = function(data, case) {
   abar0 <- matrix(rep(FALSE, length(outcome_weeks)*nrow(filtered_data)), ncol = length(outcome_weeks))
   
   
-  #Step 4: return all inputs for the LTMLE function as a list with named elements
+  #Step 5: return all inputs for the LTMLE function as a list with named elements
   input_names = c("dataset_missing_baseline_covariates",
                   "Anodes",
                   "Lnodes",
@@ -243,14 +258,16 @@ ltmle_case_prep = function(data, case) {
   inputs
 }
 
-# test_case_1 = ltmle_case_prep(ltmle_prep3, case1)
+ test_case_1 = ltmle_case_prep(ltmle_prep3, case1)
+ test_case_5 = ltmle_case_prep(ltmle_prep3, case5)
+ 
 # test_case_2 = ltmle_case_prep(ltmle_prep3, case2)
 # test_case_3 = ltmle_case_prep(ltmle_prep3, case3)
 # test_case_4 = ltmle_case_prep(ltmle_prep3, case4)
 # test_case_8 = ltmle_case_prep(ltmle_prep3, case8)
 
-weekly_data_for_ltmle_04 = list()
-for (case in cases_easy) {
-  weekly_data_for_ltmle_04 = append(weekly_data_for_ltmle_04, ltmle_case_prep(ltmle_prep3, case))
-}
-  
+# weekly_data_for_ltmle_04 = list()
+# for (case in cases_hard) {
+#   weekly_data_for_ltmle_04 = append(weekly_data_for_ltmle_04, ltmle_case_prep(ltmle_prep3, case))
+# }
+#   
