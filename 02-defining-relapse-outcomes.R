@@ -1,5 +1,7 @@
 #defining relapse outcomes
-#include a couple different versions of outcome definitions
+#TODO: include a couple different versions of outcome definitions
+# --> currently only using the outcome from the provided data
+# --> would like to include a version where the outcome is at the end of the non-study drug use period
 
 library(lubridate)
 
@@ -43,13 +45,15 @@ visit_data = append(visit_data, "use_today")
 
 #The four variables needed to run LTMLE are: relapse_this_week, use_this_week, dose_this_week, dose_increase_this_week
 #NOTE: I'm leaving out dose_increase_this_week, becasue I think that's better added in with the LTMLE prep code
-# --> QUESTION: should that be yes/no whether there was a dose increase, or yes/no whether there was the treatment of interest?
+# --> this is the "treatment node" and will need to be different depending on the treatment we're looking at
 all_data = all_data %>% 
   group_by(who, week_of_intervention) %>% 
-  mutate(relapse_this_week = relapse_date %within% interval(rand_dt + weeks(week_of_intervention - 1),
-                                                            rand_dt + weeks(week_of_intervention) - 1),
+  mutate(relapse_this_week = (relapse_date %within% interval(rand_dt + weeks(week_of_intervention - 1),
+                                                            rand_dt + weeks(week_of_intervention) - 1)),
          # NOTE: this will give FALSE if they didn't use on any days this week, but DID drop out this week.
          #    this is corrected for in the ltmle prep code, becuase we will count weeks post-drop out as use weeks
+         #Below: if they never relapsed, mark all weeks as FALSE for relapse this week, regardless of relapse date
+         relapse_this_week = ifelse(opioiduse24 == "no", FALSE, relapse_this_week),
          use_this_week = sum(use_today, na.rm = TRUE) > 0, 
          dose_this_week = max_dose_this_week
   ) %>% ungroup()
