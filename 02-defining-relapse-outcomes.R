@@ -73,6 +73,3 @@ visits_with_outcomes_02 = all_data
 weeks_with_outcomes_02 = all_data %>%
   distinct(who, week_of_intervention, .keep_all = TRUE) %>%
   select(all_of(c(demog, comorbidities, treatment_info, outcomes, weekly_indicators)))
-
-#---------------- X -----------------#
-#---------------- X -----------------#

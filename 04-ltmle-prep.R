@@ -1,8 +1,6 @@
 # prep data for LTMLE
 
 #QUESTIONS:
-# * For our A-nodes (dose_increase_this_week), is this the treatment [any dose increase],
-#    or the treatment rule [dose increase after use, above threshold]?
 # * When screening out weeks without enough data, are we looking for >=3 people who had a dose increase,
 #    or who fit the rule? (dose increase after use, + over some dose threshold)
 
@@ -13,7 +11,8 @@
 #Number who switched meds: 13
 #Number who never initiated treatment: 118
 #Number who dropped out or relapsed before the end of detox: 674
-#                       (including 106 of never initiated)
+#     --> No! Keep in people who relapsed on day 21/22, as we'll be looking at their doseages
+#     --> during detox and it's meaningful to know whether they made it through detox or not
 #
 #How many are left after removing all of the above: 1,503
 #
@@ -26,14 +25,16 @@ ltmle_prep1 = weeks_with_outcomes_02 %>%
          week_of_intervention, relapse_this_week, use_this_week, dose_this_week) %>% 
   #remove anyone who switched meds (won't be able to look at their dose / dose increase)
   #remove anyone who never initiated treatment (they won't have any weekly data to analyze)
-  #remove patients who relapsed before the end of detox (their detox date represents something different)
-  group_by(who) %>% 
-  mutate(gone_before_end_of_detox = relapse_date - rand_dt <= 22) %>% 
-  ungroup() %>% 
-  filter(!switched_meds & !never_initiated & !gone_before_end_of_detox) %>% 
+  # #remove patients who relapsed before the end of detox (their detox date represents something different)
+  # group_by(who) %>% 
+  # mutate(gone_before_end_of_detox = relapse_date - rand_dt <= 22) %>% 
+  # ungroup() %>% 
+  # filter(!switched_meds & !never_initiated & !gone_before_end_of_detox) %>% 
+  filter(!switched_meds & !never_initiated) %>% 
   #remove weekly data for weeks past 24
   filter(week_of_intervention <= 24) %>% 
-  select(-switched_meds, -never_initiated, -rand_dt, -relapse_date, -gone_before_end_of_detox)
+  select(-switched_meds, -never_initiated, -rand_dt, -relapse_date)
+  # select(-switched_meds, -never_initiated, -rand_dt, -relapse_date, -gone_before_end_of_detox)
 
 
 #---------------- Instructions on how LTMLE expects the data -----------------#
@@ -242,14 +243,14 @@ ltmle_case_prep = function(data, case) {
   inputs
 }
 
-test_case_1 = ltmle_case_prep(ltmle_prep3, case1)
-test_case_2 = ltmle_case_prep(ltmle_prep3, case2)
-test_case_3 = ltmle_case_prep(ltmle_prep3, case3)
-test_case_4 = ltmle_case_prep(ltmle_prep3, case4)
-test_case_8 = ltmle_case_prep(ltmle_prep3, case8)
+# test_case_1 = ltmle_case_prep(ltmle_prep3, case1)
+# test_case_2 = ltmle_case_prep(ltmle_prep3, case2)
+# test_case_3 = ltmle_case_prep(ltmle_prep3, case3)
+# test_case_4 = ltmle_case_prep(ltmle_prep3, case4)
+# test_case_8 = ltmle_case_prep(ltmle_prep3, case8)
 
-# weekly_data_for_ltmle_04 = list()
-# for (case in cases_easy) {
-#   weekly_data_for_ltmle_04 = append(weekly_data_for_ltmle_04, ltmle_case_prep(ltmle_prep3, case))
-# }
+weekly_data_for_ltmle_04 = list()
+for (case in cases_easy) {
+  weekly_data_for_ltmle_04 = append(weekly_data_for_ltmle_04, ltmle_case_prep(ltmle_prep3, case))
+}
   
