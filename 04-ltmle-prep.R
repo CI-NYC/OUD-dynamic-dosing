@@ -123,7 +123,7 @@ ltmle_prep3 = ltmle_prep2 %>%
 case_attributes = c("medicine", "projects", "dose_threshold", "name")
 
 #Bupenorphine
-case1 = list("bup", c(27, 30, 51), 0, "Bupenorphine (all), any dose increase")
+case1 = list("bup", c(27, 51), 0, "Bupenorphine (p27 & p50), any dose increase")
 names(case1) = case_attributes
 
 case2 = list("bup", c(27), 0, "Bupenorphine (p27), any dose increase")
@@ -136,21 +136,37 @@ case4 = list("bup", c(51), 0, "Bupenorphine (p51), any dose increase")
 names(case4) = case_attributes
 
 #Dose increases above threshold: 16, 20, 24 mg
-case5 = list("bup", c(27, 30, 51), 16, "Bupenorphine (all), dose increase to >= 16")
+case5 = list("bup", c(27, 51), 16, "Bupenorphine (p27 & p50), dose increase to >= 16")
 names(case5) = case_attributes
 
-case6 = list("bup", c(27, 30, 51), 20, "Bupenorphine (all), dose increase to >= 20")
+case6 = list("bup", c(27, 51), 20, "Bupenorphine (p27 & p50), dose increase to >= 20")
 names(case6) = case_attributes
 
-case7 = list("bup", c(27, 30, 51), 24, "Bupenorphine (all), dose increase to >= 24")
+case7 = list("bup", c(27, 51), 24, "Bupenorphine (p27 & p50), dose increase to >= 24")
 names(case7) = case_attributes
 
 #Methodone: only given in p27
 case8 = list("met", c(27), 0, "Methodone (p27), any dose increase")
 names(case8) = case_attributes
 
-cases_easy = c(case1, case2, case3, case4, case8)
-cases_hard = c(case5, case6, case7)
+#Dose increases above threshold: 40, 50, 80, 100 mg
+case9 = list("met", c(27), 40, "Methodone (p27), dose increase to >= 50")
+names(case9) = case_attributes
+
+case10 = list("met", c(27), 50, "Methodone (p27), dose increase to >= 50")
+names(case10) = case_attributes
+
+case11 = list("met", c(27), 80, "Methodone (p27), dose increase to >= 80")
+names(case11) = case_attributes
+
+case12 = list("met", c(27), 100, "Methodone (p27), dose increase to >= 100")
+names(case12) = case_attributes
+
+# cases_easy = list(case1, case2, case3, case4, case8)
+# cases_hard = list(case5, case6, case7)
+cases = list(case1, case2, case3, case4, case5, case6,
+             case7, case8, case9, case10, case11, case12)
+
 
 #---------------- Function: take in a case, output a dataset and parameters ready for LTMLE -----------------#
 
@@ -235,8 +251,35 @@ ltmle_case_prep = function(data, case) {
   #...in a hypothetical population with no dynamic dose increase (so, all FALSE)
   abar0 <- matrix(rep(FALSE, length(outcome_weeks)*nrow(filtered_data)), ncol = length(outcome_weeks))
   
+  #Step 5: create a table showing the counts of different types of patient events at each week
+  weekly_counts = tibble(week = 1:24) %>% 
+    group_by(week) %>% 
+    mutate(patients = sum(filtered_data[, paste0("wk", week, ".relapse_this_week")] == 0),
+            treatment_this_week = sum(filtered_data[, paste0("wk", week, ".treatment_this_week")] == 1),
+            use_this_week = sum(filtered_data[, paste0("wk", week, ".use_this_week")] == 1),
+            treatment_and_use_this_week = sum(filtered_data[, paste0("wk", week, ".treatment_this_week")] == 1 &
+                                                filtered_data[, paste0("wk", week, ".use_this_week")] == 1),
+           #we want to create summary counts, but only want patients who haven't yet relapsed (the [[1,2]])
+           dose_mean = aggregate(filtered_data[, paste0("wk", week, ".dose_this_week")],
+                                        by = filtered_data[, paste0("wk", week, ".relapse_this_week")],
+                                        FUN = mean)[[1,2]],
+           dose_median = aggregate(filtered_data[, paste0("wk", week, ".dose_this_week")],
+                                 by = filtered_data[, paste0("wk", week, ".relapse_this_week")],
+                                 FUN = median)[[1,2]],
+           dose_min = aggregate(filtered_data[, paste0("wk", week, ".dose_this_week")],
+                                 by = filtered_data[, paste0("wk", week, ".relapse_this_week")],
+                                 FUN = min)[[1,2]],
+           dose_max = aggregate(filtered_data[, paste0("wk", week, ".dose_this_week")],
+                                 by = filtered_data[, paste0("wk", week, ".relapse_this_week")],
+                                 FUN = max)[[1,2]],
+           dose_iqr = aggregate(filtered_data[, paste0("wk", week, ".dose_this_week")],
+                                 by = filtered_data[, paste0("wk", week, ".relapse_this_week")],
+                                 FUN = IQR)[[1,2]]
+    ) %>% 
+    ungroup() %>% 
+    mutate(new_relapse_this_week = lag(patients, default = 0) - patients)
   
-  #Step 5: return all inputs for the LTMLE function as a list with named elements
+  #Step 6: return all inputs for the LTMLE function as a list with named elements
   input_names = c("dataset_missing_baseline_covariates",
                   "Anodes",
                   "Lnodes",
@@ -244,6 +287,8 @@ ltmle_case_prep = function(data, case) {
                   "abar1",
                   "abar0",
                   "outcome_weeks",
+                  "weeks_with_treatments",
+                  "weekly_counts",
                   "name")
   inputs = list(filtered_data,
              Anodes,
@@ -252,22 +297,17 @@ ltmle_case_prep = function(data, case) {
              abar1,
              abar0,
              outcome_weeks,
+             weeks_with_treatments,
+             weekly_counts,
              case[["name"]])
   names(inputs) = input_names
   
   inputs
 }
 
- test_case_1 = ltmle_case_prep(ltmle_prep3, case1)
- test_case_5 = ltmle_case_prep(ltmle_prep3, case5)
- 
-# test_case_2 = ltmle_case_prep(ltmle_prep3, case2)
-# test_case_3 = ltmle_case_prep(ltmle_prep3, case3)
-# test_case_4 = ltmle_case_prep(ltmle_prep3, case4)
-# test_case_8 = ltmle_case_prep(ltmle_prep3, case8)
 
-# weekly_data_for_ltmle_04 = list()
-# for (case in cases_hard) {
-#   weekly_data_for_ltmle_04 = append(weekly_data_for_ltmle_04, ltmle_case_prep(ltmle_prep3, case))
-# }
-#   
+weekly_data_for_ltmle_04 = list()
+for (case in cases) {
+  weekly_data_for_ltmle_04 = c(weekly_data_for_ltmle_04, list(ltmle_case_prep(ltmle_prep3, case)))
+}
+
