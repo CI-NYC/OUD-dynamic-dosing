@@ -15,14 +15,24 @@ source("04-ltmle-prep.R")
 #  write explanations of what's being output here.
 
 save(
-  # codebook,
-  # initial_data_cleaning_no_outcomes_01,
-  # patients_with_outcomes_02, visits_with_outcomes_02, 
+  codebook,
+  initial_data_cleaning_no_outcomes_01,
+  patients_with_outcomes_02, visits_with_outcomes_02,
   weeks_with_outcomes_02,
   patients_imputed_03,
-  cases_easy,
-  test_case_1,
-  #weekly_data_for_ltmle_04,
-  demog, comorbidities, treatment_info, outcomes, visit_data, weekly_indicators,
-  file = "../Data/clean_combined_data.RData"
+  ALT_patients_with_outcomes_02, ALT_visits_with_outcomes_02,
+  ALT_weeks_with_outcomes_02,
+  ALT_patients_imputed_03,
+  file = "../Data/clean_combined_imputed_data.RData"
 )
+
+save(
+  weekly_data_for_ltmle_04,
+  demog, comorbidities, treatment_info, outcomes, visit_data, weekly_indicators,
+  file = "../Data/data_ready_for_ltmle.RData"
+)
+
+# save(
+#   results,
+#   file = "../Data/ltmle_results.RData"
+# )
