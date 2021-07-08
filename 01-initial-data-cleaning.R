@@ -8,33 +8,44 @@ library(lubridate)
 
 #---------------- Importing the data -----------------#
 
-#Note: the long strings denote the type for each column (factor, character, number).
-#Dates didn't convert nicely so I deal with them in the next step
-druguse_data_raw = read_csv("../Data/druguseupctn94.csv", col_types = "fcnffffcfcfnfffnfnfffffffffffffffffff")
+#Note: the baseline spreadsheet doesn't have any additional or different information from druguse,
+#so no need to use it here.
+# new_baseline_data_raw = readxl::read_xlsx("../Data/baseline_06062021.xlsx")
 
+druguse_data_raw = readxl::read_xlsx("../Data/druguse_06062021.xlsx")
+
+#Dates didn't convert nicely so I deal with them here
 druguse_data_raw$fusedt12 <- as.Date(druguse_data_raw$fusedt12, format = "%m/%d/%y")
 druguse_data_raw$fusedt24 <- as.Date(druguse_data_raw$fusedt24, format = "%m/%d/%y")
 druguse_data_raw$when <- as.Date(druguse_data_raw$when, format = "%m/%d/%y", origin = "1960-01-01")
 druguse_data_raw$rand_dt <- as.Date(druguse_data_raw$rand_dt, origin = "1960-01-01")
 
-visits_raw = druguse_data_raw
+# the new dataset is missing values for 3 columns, so I'm taking those from the old baseline data
+cols_to_keep_from_old = c("who", "bamphetamine30_base", "bcannabis30_base", "bbenzo30_base")
+old_baseline_data = read_csv("../Data/baselinectn94.csv") %>% 
+  select(cols_to_keep_from_old) %>% 
+  mutate_at(all_of(cols_to_keep_from_old), factor)
 
-#Note: the commented-out code below shows that the baseline data was all consistently copied...
-#...through the druguse dataset, so no need to merge the two. We can just use the druguse data as-is.
 
-# baseline_data_raw = read_csv("../Data/baselinectn94.csv", col_types = "fffffcfcfnfnfffffffffffffffffff")
-# baseline_data_raw$fusedt12 <- as.Date(baseline_data_raw$fusedt12, format = "%m/%d/%y")
-# baseline_data_raw$fusedt24 <- as.Date(baseline_data_raw$fusedt24, format = "%m/%d/%y")
-# 
-# visits_raw = merge(baseline_data_raw[, colnames(baseline_data_raw)],
-#                    #Take all columns from the baseline data set
-#                    druguse_data_raw[, c("who", setdiff(colnames(druguse_data_raw), 
-#                                                        colnames(baseline_data_raw)))],
-#                    #Take columns that were *not* in baseline from the druguse dataset
-#                    by = "who", #Merge on patient id (who)
-#                    all = TRUE)
-# 
-# diffdf(druguse_data_raw, visits_raw)
+# NOTE: this data set includes multiple ways to operationalize race.
+#    I'm choosing to only keep racex (see codebook), and remove the others
+#    as well as isHispanic, which is incorporated in
+# QUESTION: what is "i"?
+to_remove = c("raceg", "x2race", "x3race", "isHispanic", "i")
+
+# all columns except these should be factors:
+not_factors = c("fusedt12", "fusedt24", "when", "rand_dt", "mg", "age", "hcows")
+
+#remaining columns:
+make_into_factors = setdiff(colnames(druguse_data_raw), c(not_factors, to_remove))
+
+visits_raw = druguse_data_raw %>% 
+  select(-to_remove) %>% 
+  mutate_at(make_into_factors, factor) %>% 
+  select(-bamphetamine30_base, -bcannabis30_base, -bbenzo30_base)
+
+#bring information on three missing columns from old_baseline_data into visits_raw
+visits_raw = left_join(visits_raw, old_baseline_data, by = "who")
 
 #---------------- Recoding missing data as NA -----------------#
 
@@ -45,8 +56,8 @@ visits_raw = visits_raw %>%
     where(is.factor),
     .fns = ~ recode(.x, "-9" = NA_character_, "-8" = NA_character_)
   )) %>%
-  mutate(mg = recode(mg, "-9" = NA_real_)) %>% 
-  mutate(uopioid = recode(uopioid, "-1" = NA_character_))
+  mutate(mg = recode(mg, "-9" = NA_real_)) #%>% 
+  #mutate(uopioid = recode(uopioid, "-1" = NA_character_)) #this was corrected in the newer dataset
 
 #---------------- Re-leveling factors -----------------#
 
@@ -55,8 +66,8 @@ visits_raw = visits_raw %>%
 visits_raw = visits_raw %>%
   mutate(
     project = fct_relevel(project, c("27", "30", "51")),
-    isHispanic = fct_recode(isHispanic, "no" = "0", "yes" = "1"),
-    race = fct_relevel(race, c("1", "2", "3", "7")),
+    #isHispanic = fct_recode(isHispanic, "no" = "0", "yes" = "1"), #I'm now removing this earlier in the code
+    #race = fct_relevel(race, c("1", "2", "3", "7")), #removed from 6/21 dataset
     opioiduse12 = fct_recode(opioiduse12, "no" = "0", "yes" = "1"),
     opioiduse24 = fct_recode(opioiduse24, "no" = "0", "yes" = "1"),
     sex = fct_recode(sex, "male" = "1", "female" = "2"),
@@ -321,13 +332,12 @@ visits_with_weekly_dose_added = filled_med %>%
 
 #---------------- Drop redundant or incomplete columns -----------------#
 
-#Keep the `xrace` column, which combines `race` and `isHispanic` (and drop those two)
 #Drop the `hcows` column, as it is redundant with `hwithdraw`
 #Drop the `edu`, `mar` (married), `falcohol`, and `fdrug` columns because they weren't included in all projects
 #Drop the `mg` column, because I've split it into different columns by drug
 
 initial_data_cleaning_no_outcomes_01 = visits_with_weekly_dose_added %>% 
-  select(-race, -isHispanic, -hcows, -edu, -mar, -falcohol, -fdrug, -mg)
+  select(-hcows, -edu, -mar, -falcohol, -fdrug, -mg)
 
 #---------------- Create lists of column names -----------------#
 
