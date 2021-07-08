@@ -17,7 +17,6 @@ set.seed(123)
 patients_to_impute = patients_with_outcomes_02 %>%
   select(all_of(demog), all_of(treatment_info), all_of(comorbidities), relapse_date)
 
-
 #---------------- Get set up for imputation -----------------#
 
 #note: we get a warning here ("Number of logged events: 2") but I think we can ignore it...
@@ -52,3 +51,29 @@ patients_imputed_03 = mice(patients_to_impute, method = my_methods, predictorMat
 #when imputing specific other variables that are closely connected
 #I don't think this is a problem, but we can read more here:
 # https://stefvanbuuren.name/fimd/sec-toomany.html#finding-problems-loggedevents
+
+#---------------- Using the alternate outcome dataset -----------------#
+
+ALT_patients_to_impute = ALT_patients_with_outcomes_02 %>%
+  select(all_of(demog), all_of(treatment_info), all_of(comorbidities), relapse_date)
+
+# #run each iteration on its own, to help reduce chance of failure
+# imp1 <- mice(ALT_patients_to_impute,
+#              predictorMatrix = my_predMatrix,
+#              method = my_methods,
+#              m = 5,
+#              nnet.MaxNWts = 10000,
+#              maxit = 1)
+# imp2 <- mice.mids(imp1, maxit = 1)
+# imp3 <- mice.mids(imp2, maxit = 1)
+# imp4 <- mice.mids(imp3, maxit = 1)
+# ALT_patients_imputed_03 <- mice.mids(imp4, maxit = 1)
+
+
+ALT_patients_imputed_03 = mice(ALT_patients_to_impute, 
+                               method = my_methods, 
+                               predictorMatrix = my_predMatrix, 
+                               nnet.MaxNWts = 10000,
+                               m = 5)
+
+
