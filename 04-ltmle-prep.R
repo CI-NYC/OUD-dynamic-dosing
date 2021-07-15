@@ -1,122 +1,126 @@
 # prep data for LTMLE
 
+load("../Data/clean_combined_imputed_data.Rdata")
+
+
 #QUESTIONS:
 # * When screening out weeks without enough data, are we looking for >=3 people who had a dose increase,
 #    or who fit the rule? (dose increase after use, + over some dose threshold)
 
-#---------------- Remove patients who can't be analyzed -----------------#
-
-#QUESTION: are all of these exclusions necessary?
-#Original dataset has 2,189 patients
-#Number who switched meds: 13
-#Number who never initiated treatment: 118
-#Number who dropped out or relapsed before the end of detox: 674
-#     --> No! Keep in people who relapsed on day 21/22, as we'll be looking at their doseages
-#     --> during detox and it's meaningful to know whether they made it through detox or not
-#
-#How many are left after removing all of the above: 1,503
-#
-#NOTE: there's an argument to be made that we should only start looking at outcomes
-#  starting in week 5, since we need to see how week 4 went. let's discuss!
-
-ltmle_prep1 = weeks_with_outcomes_02 %>% 
-  #only keep columns we need for LTMLE. we'll add in demographics later using imputed datasets
-  select(who, switched_meds, never_initiated, rand_dt, relapse_date, medicine, project,
-         week_of_intervention, relapse_this_week, use_this_week, dose_this_week) %>% 
-  #remove anyone who switched meds (won't be able to look at their dose / dose increase)
-  #remove anyone who never initiated treatment (they won't have any weekly data to analyze)
-  # #remove patients who relapsed before the end of detox (their detox date represents something different)
-  # group_by(who) %>% 
-  # mutate(gone_before_end_of_detox = relapse_date - rand_dt <= 22) %>% 
-  # ungroup() %>% 
-  # filter(!switched_meds & !never_initiated & !gone_before_end_of_detox) %>% 
-  filter(!switched_meds & !never_initiated) %>% 
-  #remove weekly data for weeks past 24
-  filter(week_of_intervention <= 24) %>% 
-  select(-switched_meds, -never_initiated, -rand_dt, -relapse_date)
+transform_data_for_ltmle = function (original_weekly_data) {
+  weeks_with_outcomes_02 = original_weekly_data
+  
+  #---------------- Remove patients who can't be analyzed -----------------#
+  #QUESTION: are all of these exclusions necessary?
+  #Original dataset has 2,189 patients
+  #Number who switched meds: 13
+  #Number who never initiated treatment: 118
+  #Number who dropped out or relapsed before the end of detox: 674
+  #     --> No! Keep in people who relapsed on day 21/22, as we'll be looking at their doseages
+  #         during detox and it's meaningful to know whether they made it through detox or not
+  
+  ltmle_prep1 = weeks_with_outcomes_02 %>% 
+    #only keep columns we need for LTMLE. we'll add in demographics later using imputed datasets
+    select(who, switched_meds, never_initiated, rand_dt, relapse_date, medicine, project,
+           week_of_intervention, relapse_this_week, use_this_week, dose_this_week) %>% 
+    #remove anyone who switched meds (won't be able to look at their dose / dose increase)
+    #remove anyone who never initiated treatment (they won't have any weekly data to analyze)
+    # Decided NOT to do this: #remove patients who relapsed before the end of detox (their detox date represents something different)
+    # group_by(who) %>% 
+    # mutate(gone_before_end_of_detox = relapse_date - rand_dt <= 22) %>% 
+    # ungroup() %>% 
+    # filter(!switched_meds & !never_initiated & !gone_before_end_of_detox) %>% 
+    filter(!switched_meds & !never_initiated) %>% 
+    #remove weekly data for weeks past 24
+    filter(week_of_intervention <= 24) %>% 
+    select(-switched_meds, -never_initiated, -rand_dt, -relapse_date)
   # select(-switched_meds, -never_initiated, -rand_dt, -relapse_date, -gone_before_end_of_detox)
-
-
-#---------------- Instructions on how LTMLE expects the data -----------------#
-
-# LTMLE needs the data to be:
-#  * in wide format, with all baseline covariates first, and all time-varying last
-#  * no un-used columns (remove them at the very end before running)
-#  * all weekly variables (outcomes, time-varying covariates, and treatment) as 1/0, rather than TRUE/FALSE
-#  * make sure every patient's last outcome is 1 (relapsed), unless they have complete data through week 24
-#    --> DECISION: (double check!) make the last week we have data for someone into a relapse if it isn't already (except 24)
-#  * make sure every patient's outcome is 1 (relapsed) following any outcome of 1
-
-
-#---------------- Change data according to the rules above -----------------#
-
-ltmle_prep2 = ltmle_prep1 %>% 
-  group_by(who) %>% 
-  # if it's the last week we have recorded for this patient AND it's earlier than week 24,
-  # mark them as relapsed this week. otherwise leave outcome as-is
-  mutate(relapse_this_week = ifelse(week_of_intervention == max(week_of_intervention) &
-                                      week_of_intervention < 24,
-                                    TRUE,
-                                    relapse_this_week),
-         #if they've ever had a previous relapse, mark them as relapsed for every following week
-         # (because our outcome must be monotonic for the ltmle function)
-         relapse_this_week = ifelse(lag(relapse_this_week, default = FALSE) |
-                                      lag(relapse_this_week, default = FALSE, n = 2) |
-                                      lag(relapse_this_week, default = FALSE, n = 3) |
-                                      lag(relapse_this_week, default = FALSE, n = 4) |
-                                      lag(relapse_this_week, default = FALSE, n = 5) |
-                                      lag(relapse_this_week, default = FALSE, n = 6) |
-                                      lag(relapse_this_week, default = FALSE, n = 7) |
-                                      lag(relapse_this_week, default = FALSE, n = 8) |
-                                      lag(relapse_this_week, default = FALSE, n = 9) |
-                                      lag(relapse_this_week, default = FALSE, n = 10) |
-                                      lag(relapse_this_week, default = FALSE, n = 11) |
-                                      lag(relapse_this_week, default = FALSE, n = 12) |
-                                      lag(relapse_this_week, default = FALSE, n = 13) |
-                                      lag(relapse_this_week, default = FALSE, n = 14) |
-                                      lag(relapse_this_week, default = FALSE, n = 15) |
-                                      lag(relapse_this_week, default = FALSE, n = 16) |
-                                      lag(relapse_this_week, default = FALSE, n = 17) |
-                                      lag(relapse_this_week, default = FALSE, n = 18) |
-                                      lag(relapse_this_week, default = FALSE, n = 19) |
-                                      lag(relapse_this_week, default = FALSE, n = 20) |
-                                      lag(relapse_this_week, default = FALSE, n = 21) |
-                                      lag(relapse_this_week, default = FALSE, n = 22) |
-                                      lag(relapse_this_week, default = FALSE, n = 23) |
-                                      lag(relapse_this_week, default = FALSE, n = 24),
-                                    TRUE,
-                                    relapse_this_week)) %>%
-  ungroup() %>% 
-  # Create "treatment node" - whether or not **this week's dose is higher than last week's**
-  mutate(dose_increase_this_week = dose_this_week > lag(dose_this_week, default = 0),
-         # BUT if they've already relapsed, count it as no dose increase (can't have treatment after outcome)
-         dose_increase_this_week = ifelse(relapse_this_week, FALSE, dose_increase_this_week)
-         ) %>% 
-  # change TRUE/FALSE to 1/0
-  mutate(relapse_this_week = as.numeric(relapse_this_week),
-         use_this_week = as.numeric(use_this_week),
-         dose_increase_this_week = as.numeric(dose_increase_this_week))
-
-
-#---------------- Pivot to wide format -----------------#
-
-ltmle_prep3 = ltmle_prep2 %>% 
-  # pivot to wide format
-  pivot_wider(names_from = week_of_intervention,
-              names_glue = "wk{week_of_intervention}.{.value}",
-              values_from = c(dose_this_week,
-                              use_this_week,
-                              relapse_this_week,
-                              dose_increase_this_week),
-              values_fill = NA) %>% 
-  # LTMLE doesn't play nice with NAs (which are generated by pivot_wider for any weeks that weren't documented)
-  # so here I'm replacing any NAs with a default value (1 for relapse, 0 for the others).
-  # These won't get used in LTMLE computations anyways, since they all occur after a relapse
-  mutate_at(vars(contains("relapse_this_week")), ~replace_na(., 1)) %>%
-  mutate_at(vars(contains("dose_this_week")), ~replace_na(., 0)) %>%
-  mutate_at(vars(contains("use_this_week")), ~replace_na(., 0)) %>% 
-  mutate_at(vars(contains("dose_increase_this_week")), ~replace_na(., 0))
-
+  
+  
+  #---------------- Instructions on how LTMLE expects the data -----------------#
+  
+  # LTMLE needs the data to be:
+  #  * in wide format, with all baseline covariates first, and all time-varying last
+  #  * no un-used columns (remove them at the very end before running)
+  #  * all weekly variables (outcomes, time-varying covariates, and treatment) as 1/0, rather than TRUE/FALSE
+  #  * make sure every patient's last outcome is 1 (relapsed), unless they have complete data through week 24
+  #    --> DECISION: (double check!) make the last week we have data for someone into a relapse if it isn't already (except 24)
+  #  * make sure every patient's outcome is 1 (relapsed) following any outcome of 1
+  
+  
+  #---------------- Change data according to the rules above -----------------#
+  
+  ltmle_prep2 = ltmle_prep1 %>% 
+    group_by(who) %>% 
+    # if it's the last week we have recorded for this patient AND it's earlier than week 24,
+    # mark them as relapsed this week. otherwise leave outcome as-is
+    mutate(relapse_this_week = ifelse(week_of_intervention == max(week_of_intervention) &
+                                        week_of_intervention < 24,
+                                      TRUE,
+                                      relapse_this_week),
+           #if they've ever had a previous relapse, mark them as relapsed for every following week
+           # (because our outcome must be monotonic for the ltmle function)
+           relapse_this_week = ifelse(lag(relapse_this_week, default = FALSE) |
+                                        lag(relapse_this_week, default = FALSE, n = 2) |
+                                        lag(relapse_this_week, default = FALSE, n = 3) |
+                                        lag(relapse_this_week, default = FALSE, n = 4) |
+                                        lag(relapse_this_week, default = FALSE, n = 5) |
+                                        lag(relapse_this_week, default = FALSE, n = 6) |
+                                        lag(relapse_this_week, default = FALSE, n = 7) |
+                                        lag(relapse_this_week, default = FALSE, n = 8) |
+                                        lag(relapse_this_week, default = FALSE, n = 9) |
+                                        lag(relapse_this_week, default = FALSE, n = 10) |
+                                        lag(relapse_this_week, default = FALSE, n = 11) |
+                                        lag(relapse_this_week, default = FALSE, n = 12) |
+                                        lag(relapse_this_week, default = FALSE, n = 13) |
+                                        lag(relapse_this_week, default = FALSE, n = 14) |
+                                        lag(relapse_this_week, default = FALSE, n = 15) |
+                                        lag(relapse_this_week, default = FALSE, n = 16) |
+                                        lag(relapse_this_week, default = FALSE, n = 17) |
+                                        lag(relapse_this_week, default = FALSE, n = 18) |
+                                        lag(relapse_this_week, default = FALSE, n = 19) |
+                                        lag(relapse_this_week, default = FALSE, n = 20) |
+                                        lag(relapse_this_week, default = FALSE, n = 21) |
+                                        lag(relapse_this_week, default = FALSE, n = 22) |
+                                        lag(relapse_this_week, default = FALSE, n = 23) |
+                                        lag(relapse_this_week, default = FALSE, n = 24),
+                                      TRUE,
+                                      relapse_this_week)) %>%
+    ungroup() %>% 
+    # Create a default "treatment node" - whether or not **this week's dose is higher than last week's**
+    # Note: if our treatment definition is more complex (ex. over a dose threshold), this'll get updated later on.
+    mutate(dose_increase_this_week = dose_this_week > lag(dose_this_week, default = 0),
+           # BUT if they've already relapsed, count it as no dose increase (can't have treatment after outcome)
+           dose_increase_this_week = ifelse(relapse_this_week, FALSE, dose_increase_this_week)
+    ) %>% 
+    # change TRUE/FALSE to 1/0
+    mutate(relapse_this_week = as.numeric(relapse_this_week),
+           use_this_week = as.numeric(use_this_week),
+           dose_increase_this_week = as.numeric(dose_increase_this_week))
+  
+  
+  #---------------- Pivot to wide format -----------------#
+  
+  ltmle_prep3 = ltmle_prep2 %>% 
+    # pivot to wide format
+    pivot_wider(names_from = week_of_intervention,
+                names_glue = "wk{week_of_intervention}.{.value}",
+                values_from = c(dose_this_week,
+                                use_this_week,
+                                relapse_this_week,
+                                dose_increase_this_week),
+                values_fill = NA) %>% 
+    # LTMLE doesn't play nice with NAs (which are generated by pivot_wider for any weeks that weren't documented)
+    # so here I'm replacing any NAs with a default value (1 for relapse, 0 for the others).
+    # These won't get used in LTMLE computations anyways, since they all occur after a relapse
+    mutate_at(vars(contains("relapse_this_week")), ~replace_na(., 1)) %>%
+    mutate_at(vars(contains("dose_this_week")), ~replace_na(., 0)) %>%
+    mutate_at(vars(contains("use_this_week")), ~replace_na(., 0)) %>% 
+    mutate_at(vars(contains("dose_increase_this_week")), ~replace_na(., 0))
+  
+  # Wide dataset to return:
+  ltmle_prep3
+}
 
 #---------------- Create a set of different cases to try out -----------------#
 
@@ -150,7 +154,7 @@ case8 = list("met", c(27), 0, "Methodone (p27), any dose increase")
 names(case8) = case_attributes
 
 #Dose increases above threshold: 40, 50, 80, 100 mg
-case9 = list("met", c(27), 40, "Methodone (p27), dose increase to >= 50")
+case9 = list("met", c(27), 40, "Methodone (p27), dose increase to >= 40")
 names(case9) = case_attributes
 
 case10 = list("met", c(27), 50, "Methodone (p27), dose increase to >= 50")
@@ -162,8 +166,7 @@ names(case11) = case_attributes
 case12 = list("met", c(27), 100, "Methodone (p27), dose increase to >= 100")
 names(case12) = case_attributes
 
-# cases_easy = list(case1, case2, case3, case4, case8)
-# cases_hard = list(case5, case6, case7)
+
 cases = list(case1, case2, case3, case4, case5, case6,
              case7, case8, case9, case10, case11, case12)
 
@@ -305,9 +308,20 @@ ltmle_case_prep = function(data, case) {
   inputs
 }
 
+## FOR TESTING NEW NODES (delete later)
+for_analysis_case1_ORIGINAL = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case1)
 
-weekly_data_for_ltmle_04 = list()
+for_analysis_case1_NEW = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case1)
+
+## USE THIS instead of the code below, ifyou want to use the original relapse definitions
+# weekly_data_for_ltmle_04 = list()
+# for (case in cases) {
+#   weekly_data_for_ltmle_04 = c(weekly_data_for_ltmle_04,
+#                                list(ltmle_case_prep(transform_data_for_ltmle(weeks_with_outcomes_02), case)))
+# }
+
+ALT_weekly_data_for_ltmle_04 = list()
 for (case in cases) {
-  weekly_data_for_ltmle_04 = c(weekly_data_for_ltmle_04, list(ltmle_case_prep(ltmle_prep3, case)))
+  ALT_weekly_data_for_ltmle_04 = c(ALT_weekly_data_for_ltmle_04,
+                                   list(ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case)))
 }
-
