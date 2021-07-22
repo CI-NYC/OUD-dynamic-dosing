@@ -1,6 +1,6 @@
 # dynamic-dose-increase-combined-data
 
-To use the code in this repository, create another folder/directory at the same level called `Data`, with the `druguseupctn94.csv` file in it. Also create an empty folder inside of `Data` called `Plots`. This will ensure that all the scripts run properly, and that your raw data file & subsequent data outputs don't get uploaded to GitHub.
+To use the code in this repository, create another folder/directory at the same level called `Data`, with the `druguse_06062021.xlsx` and `baselinectn94.csv` files in it. Also create an empty folder inside of `Data` called `Plots`. This will ensure that all the scripts run properly, and that your raw data file & subsequent data outputs don't get uploaded to GitHub.
 
 As you run the R scripts, your `Data` folder will get populated with new tables, in `.RData` format.
 
@@ -24,9 +24,3 @@ If you want to re-create the entire dataset and analysis from scratch, be warned
 1. Run `05-one-step-data-prep.R` *(no need to run scripts 00 through 04, they won't necessarily work on their own)*
 2. Take a look in your data folder, or open up R and run `load("clean_combined_imputed_data.RData")` and `load("data_ready_for_ltmle.RData")` to explore. Consider starting with the codebook.
 3. Run `06-ltmle-analysis.R` to produce plots/tables. Look in your folder `Data/Plots` to find them.
-
-
-## TODO later:
-
-2. Get some descriptive summaries of the data, such as a Table 1, or anything else to help contextualize the results
-4. Provide output datasets as CSVs in addition to RData
