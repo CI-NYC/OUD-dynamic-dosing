@@ -127,66 +127,66 @@ transform_data_for_ltmle = function (original_weekly_data) {
 case_attributes = c("medicine", "projects", "dose_threshold", "name", "max_weeks", "responsive")
 
 #Bupenorphine
-case1 = list("bup", c(27, 51), 0, "Buprenorphine (p27 & p50), responsive dose increase", 24, TRUE)
+case1 = list("bup", c(27, 51), 32, "Buprenorphine (p27 & p51), responsive dose increase", 24, TRUE)
 names(case1) = case_attributes
 
-case2 = list("bup", c(27), 0, "Buprenorphine (p27), responsive dose increase", 24, TRUE)
+case2 = list("bup", c(27), 32, "Buprenorphine (p27), responsive dose increase", 24, TRUE)
 names(case2) = case_attributes
 
-case3 = list("bup", c(30), 0, "Buprenorphine (p30), responsive dose increase", 24, TRUE)
+case3 = list("bup", c(30), 32, "Buprenorphine (p30), responsive dose increase", 24, TRUE)
 names(case3) = case_attributes
 
-case4 = list("bup", c(51), 0, "Buprenorphine (p51), responsive dose increase", 24, TRUE)
+case4 = list("bup", c(51), 32, "Buprenorphine (p51), responsive dose increase", 24, TRUE)
 names(case4) = case_attributes
 
 #Dose increases above threshold: 16, 20, 24 mg
-case5 = list("bup", c(27, 51), 16, "Buprenorphine (p27 & p50), responsive dose increase to >= 16", 24, TRUE)
+case5 = list("bup", c(27, 51), 16, "Buprenorphine (p27 & p50), responsive dose increase if <16mg", 24, TRUE)
 names(case5) = case_attributes
 
-case6 = list("bup", c(27, 51), 20, "Buprenorphine (p27 & p50), responsive dose increase to >= 20", 24, TRUE)
+case6 = list("bup", c(27, 51), 20, "Buprenorphine (p27 & p50), responsive dose increase if <20mg", 24, TRUE)
 names(case6) = case_attributes
 
-case7 = list("bup", c(27, 51), 24, "Buprenorphine (p27 & p50), responsive dose increase to >= 24", 24, TRUE)
+case7 = list("bup", c(27, 51), 24, "Buprenorphine (p27 & p50), responsive dose increase if <24mg", 24, TRUE)
 names(case7) = case_attributes
 
 #Methodone: only given in p27
-case8 = list("met", c(27), 0, "Methodone (p27), responsive dose increase", 24, TRUE)
+case8 = list("met", c(27), 150, "Methodone (p27), responsive dose increase", 24, TRUE)
 names(case8) = case_attributes
 
 #Dose increases above threshold: 40, 50, 80, 100 mg
-case9 = list("met", c(27), 40, "Methodone (p27), responsive dose increase to >= 40", 24, TRUE)
+case9 = list("met", c(27), 40, "Methodone (p27), responsive dose increase if <40mg", 24, TRUE)
 names(case9) = case_attributes
 
-case10 = list("met", c(27), 50, "Methodone (p27), responsive dose increase to >= 50", 24, TRUE)
+case10 = list("met", c(27), 50, "Methodone (p27), responsive dose increase if <50mg", 24, TRUE)
 names(case10) = case_attributes
 
-case11 = list("met", c(27), 80, "Methodone (p27), responsive dose increase to >= 80", 24, TRUE)
+case11 = list("met", c(27), 80, "Methodone (p27), responsive dose increase if <80mg", 24, TRUE)
 names(case11) = case_attributes
 
-case12 = list("met", c(27), 100, "Methodone (p27), responsive dose increase to >= 100", 24, TRUE)
+case12 = list("met", c(27), 100, "Methodone (p27), responsive dose increase if <100mg", 24, TRUE)
 names(case12) = case_attributes
 
 #All projects together, buprenorphine, only up to 12 weeks
-case13 = list("bup", c(27, 30, 51), 0, "Buprenorphine (p27, p30 & p50), responsive dose increase - only thru wk12", 12, TRUE)
+case13 = list("bup", c(27, 30, 51), 32, "Buprenorphine (p27, p30 & p50), responsive dose increase - only till wk12", 12, TRUE)
 names(case13) = case_attributes
 
 #NON-RESPONSIVE - just dose increases if you're under a threshold
-case14 = list("bup", c(27, 51), 16, "Buprenorphine (p27 & p50), any dose increase to >= 16", 24, FALSE)
+case14 = list("bup", c(27, 51), 16, "Buprenorphine (p27 & p50), any dose increase if <16mg", 24, FALSE)
 names(case14) = case_attributes
 
-case15 = list("bup", c(27, 51), 20, "Buprenorphine (p27 & p50), any dose increase to >= 20", 24, FALSE)
+case15 = list("bup", c(27, 51), 20, "Buprenorphine (p27 & p50), any dose increase if <20mg", 24, FALSE)
 names(case15) = case_attributes
 
-case16 = list("met", c(27), 40, "Methodone (p27), any dose increase to >= 40", 24, FALSE)
+case16 = list("met", c(27), 40, "Methodone (p27), any dose increase if <40mg", 24, FALSE)
 names(case16) = case_attributes
 
-case17 = list("met", c(27), 50, "Methodone (p27), any dose increase to >= 50", 24, FALSE)
+case17 = list("met", c(27), 50, "Methodone (p27), any dose increase if <50mg", 24, FALSE)
 names(case17) = case_attributes
 
-case18 = list("met", c(27), 80, "Methodone (p27), any dose increase to >= 80", 24, FALSE)
+case18 = list("met", c(27), 80, "Methodone (p27), any dose increase if <80mg", 24, FALSE)
 names(case18) = case_attributes
 
-case19 = list("met", c(27), 100, "Methodone (p27), any dose increase to >= 100", 24, FALSE)
+case19 = list("met", c(27), 100, "Methodone (p27), any dose increase if <100mg", 24, FALSE)
 names(case19) = case_attributes
 
 cases = list(case1, case2, case3, case4, case5, case6,
@@ -197,11 +197,12 @@ cases = list(case1, case2, case3, case4, case5, case6,
 #---------------- Function: take in a case, output a dataset and parameters ready for LTMLE -----------------#
 
 ltmle_case_prep = function(data, case) {
-  #Step 1: filter the data down to only the medicine and project specified by the case
+  #Step 1: filter the data down to only the medicine, project, and weeks specified by the case
   filtered_data = data %>% 
     filter(project %in% case[["projects"]] & medicine == case[["medicine"]]) %>% 
     select(-starts_with(paste0("wk", (case[["max_weeks"]]+1):25)))
   
+  # DELETE
   #Step 2: make "treatment node" approporiate for this case, Anodes: treatment_this_week
   #  this takes into account the dose threshold (0 if we just care about any dose increase)
   # filtered_data = filtered_data %>% 
@@ -217,7 +218,7 @@ ltmle_case_prep = function(data, case) {
   #     )
   # }
   
-  #Step 3: check whether there are enough events in each week to include that week in the analysis
+  #Step 2: check whether there are enough events in each week to include that week in the analysis
 
   #Are there any weeks (of 4-24) where no-one's outcome changed (no new relapses)?
   #...If so, exclude those weeks from the analysis alltogether.
@@ -230,12 +231,23 @@ ltmle_case_prep = function(data, case) {
     }
   }
   
-  #Are there any weeks with under 3 dose increases?
-  #...If so, exclude those weeks from making the dynamic dosing rule
+  #Are there any weeks with 0 people who fit the treatment rule?
+  #...If so, exclude those weeks from the Anodes, Lnodes, and Abar.
+  #...also, exclude any weeks past week 12.
   weeks_with_treatments = c()
-  for (w in 4:case[["max_weeks"]]) {
-    num_increases = sum(filtered_data[[sym(paste0("wk", w, ".dose_this_week"))]])
-    if (num_increases >= 3) {
+  # only go up to whichever is first, 12 weeks or max_weeks
+  for (w in 4:min(case[["max_weeks"]], 12)) {
+    increases_this_week = filtered_data[[sym(paste0("wk", w, ".dose_increase_this_week"))]]
+    under_threshold_last_week = filtered_data[[sym(paste0("wk", w - 1, ".dose_this_week"))]] < case[["dose_threshold"]]
+    use_last_week = ifelse(rep(case[["responsive"]], nrow(filtered_data)), 
+                           filtered_data[[sym(paste0("wk", w - 1, ".use_this_week"))]],
+                           rep(TRUE, nrow(filtered_data)))
+    
+    # cat(paste0("Increases this week: ", sum(increases_this_week), "\n"))
+    # cat(paste0("Use last week: ", sum(use_last_week), "\n"))
+    treatment = increases_this_week & under_threshold_last_week & use_last_week
+    # cat(paste0("Treatments this week: ", sum(treatment), "\n"))
+    if (sum(treatment) > 0) {
       weeks_with_treatments = c(weeks_with_treatments, w)
     }
   }
@@ -246,15 +258,17 @@ ltmle_case_prep = function(data, case) {
   #...restricted to weeks where a relapse outcome and a treatment were both possible (so, 4-24)
   Anodes = vector("list", length(outcome_weeks))
   for (i in 1:length(outcome_weeks)) {
-    Anodes[[i]] <- paste0("wk", outcome_weeks[1:i], ".dose_this_week")
+    Anodes[[i]] <- #c("wk3.dose_increase_this_week", 
+                     c(paste0("wk", outcome_weeks[1:i][outcome_weeks[1:i] %in% weeks_with_treatments], ".dose_increase_this_week"))
   }
 
   #Lnodes (time-varying covariates) - each includes `dose_this_week` lagged by 1 (3-24)...
   #... and `use_this_week` lagged by 1 for this and all previous weeks (2-24).
+  #  (for use this week, include a week if the next week was a week with a treatment)
   Lnodes = vector("list", length(outcome_weeks))
   for (i in 1:length(outcome_weeks)) {
-    Lnodes[[i]] <- c(paste0("wk", c(3, outcome_weeks[1:i-1]), ".dose_this_week"),
-                     paste0("wk", c(2, 3, outcome_weeks[1:i-1]), ".use_this_week"))
+    Lnodes[[i]] <- c(paste0("wk", c(3, outcome_weeks[1:i-1][outcome_weeks[1:i-1] %in% c(weeks_with_treatments-1)]), ".dose_this_week"),
+                     paste0("wk", c(2, 3, outcome_weeks[1:i-1][outcome_weeks[1:i-1] %in% weeks_with_treatments]), ".use_this_week"))
   }
   
   #Ynodes (outcome nodes) - `relapse_this_week` for each week...
@@ -263,35 +277,44 @@ ltmle_case_prep = function(data, case) {
   
   
   #abar (treatment rule)
+  ## First part of the rule: did they have use the week before? (this is necessary for RESPONSIVE treatment rules)
   #...for each observation at each time point, was there any opioid use the week before?
-  abar1a <- filtered_data[, paste0("wk", outcome_weeks - 1, ".use_this_week")] == 1
-  # max dose & use
-  
+  abar1a <- filtered_data[, paste0("wk", c(outcome_weeks - 1)[outcome_weeks %in% weeks_with_treatments], ".use_this_week")] == 1
+
+  ## Second part of the rule: were they able to be increased? (i.e. under the max dose last week)
   #...for each observation at each time point, were they under the max possible dose the week before?
   max_dose = ifelse(case[["medicine"]] == "bup", 32, 150)
-  abar1b <- filtered_data[, paste0("wk", outcome_weeks - 1, ".dose_this_week")] < max_dose
-  #threshold
+  abar1b <- filtered_data[, paste0("wk", c(outcome_weeks - 1)[outcome_weeks %in% weeks_with_treatments], ".dose_this_week")] < max_dose
+
+  ## Third part of the rule: were they below the threshold we're interested in? (if no threshold, use max dose)
+  #...for each observation at each time point, were they under the threshold dose the week before?
+  #... (meaning: if we're interested in dose increases for anyone who is under 16mg, 
+  #     we "count" them if last week they were under 16, and this week they got a dose increase)
+  abar1c <- filtered_data[, paste0("wk", c(outcome_weeks - 1)[outcome_weeks %in% weeks_with_treatments], ".dose_this_week")] < case[["dose_threshold"]]
   
   #...a matrix of what the treatment would be for every observation at every time point,
-  #...in a hypothetical population who always had a dynamic dose increase when appropriate
+  #...in a hypothetical population who always had a dose increase when appropriate
   if (case[["responsive"]]) {
-    abar1 <- I(abar1a == TRUE & abar1b == TRUE)
+    abar1 <- I(abar1a == TRUE & abar1b == TRUE & abar1c == TRUE)
   } else {
-    abar1 <- I(abar1b == TRUE)
+    abar1 <- I(abar1b == TRUE & abar1c == TRUE)
   }
   
   #...a matrix of what the treatment would be for every observation at every time point,
   #...in a hypothetical population with no dynamic dose increase (so, all FALSE)
-  abar0 <- matrix(rep(FALSE, length(outcome_weeks)*nrow(filtered_data)), ncol = length(outcome_weeks))
+  abar0 <- matrix(rep(FALSE, length(weeks_with_treatments)*nrow(filtered_data)), ncol = length(weeks_with_treatments))
   
   #Step 5: create a table showing the counts of different types of patient events at each week
   weekly_counts = tibble(week = 1:case[["max_weeks"]]) %>% 
     group_by(week) %>% 
     mutate(patients = sum(filtered_data[, paste0("wk", week, ".relapse_this_week")] == 0),
-            treatment_this_week = sum(filtered_data[, paste0("wk", week, ".treatment_this_week")] == 1),
-            use_this_week = sum(filtered_data[, paste0("wk", week, ".use_this_week")] == 1),
-            treatment_and_use_this_week = sum(filtered_data[, paste0("wk", week, ".treatment_this_week")] == 1 &
-                                                filtered_data[, paste0("wk", week, ".use_this_week")] == 1),
+            dose_increase_this_week = sum(filtered_data[, paste0("wk", week, ".dose_increase_this_week")] == 1),
+            use_last_week = sum(filtered_data[, paste0("wk", max(week - 1, 1), ".use_this_week")] == 1),
+            treatment_this_week = sum(filtered_data[, paste0("wk", week, ".dose_increase_this_week")] == 1 &
+                                                ifelse(rep(case[["responsive"]], nrow(filtered_data)), 
+                                                       filtered_data[, paste0("wk", max(week - 1, 1), ".use_this_week")] == 1, 
+                                                       rep(TRUE, nrow(filtered_data))) &
+                                                filtered_data[, paste0("wk", max(week - 1, 1), ".dose_this_week")] < case[["dose_threshold"]]),
            #we want to create summary counts, but only want patients who haven't yet relapsed (the [[1,2]])
            dose_mean = aggregate(filtered_data[, paste0("wk", week, ".dose_this_week")],
                                         by = filtered_data[, paste0("wk", week, ".relapse_this_week")],
@@ -340,26 +363,26 @@ ltmle_case_prep = function(data, case) {
   inputs
 }
 
-## FOR TESTING (delete later)
-for_analysis_case1_expandedcasedef = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case1)
-for_analysis_case13_expandedcasedef = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case13)
-for_analysis_case17_expandedcasedef = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case17)
-
-est1 = run_ltmle_case(for_analysis_case1_expandedcasedef, ALT_patients_imputed_03, 1)
-est2 = run_ltmle_case(for_analysis_case1_expandedcasedef, ALT_patients_imputed_03, 1)
-
-#ANALYSIS
-plot_ltmle(combine_estimates_across_imputations(for_analysis_case1_expandedcasedef, 
-                                                ALT_patients_imputed_03),
-           "7-22-TESTcase", "1")
-
-plot_ltmle(combine_estimates_across_imputations(for_analysis_case13_expandedcasedef, 
-                                                ALT_patients_imputed_03),
-           "7-22-TESTcase", "13")
-
-plot_ltmle(combine_estimates_across_imputations(for_analysis_case17_expandedcasedef, 
-                                                ALT_patients_imputed_03),
-           "7-22-TESTcase", "17")
+# ## FOR TESTING (delete later)
+# for_analysis_case1_expandedcasedef = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case1)
+# #for_analysis_case13_expandedcasedef = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case13)
+# #for_analysis_case17_expandedcasedef = ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case17)
+# 
+# est1 = run_ltmle_case(for_analysis_case1_expandedcasedef, ALT_patients_imputed_03, 1)
+# #est2 = run_ltmle_case(for_analysis_case1_expandedcasedef, ALT_patients_imputed_03, 1)
+# 
+# #ANALYSIS
+# plot_ltmle(combine_estimates_across_imputations(for_analysis_case1_expandedcasedef, 
+#                                                 ALT_patients_imputed_03),
+#            "7-29-TESTcase", "1")
+# 
+# plot_ltmle(combine_estimates_across_imputations(for_analysis_case13_expandedcasedef, 
+#                                                 ALT_patients_imputed_03),
+#            "7-22-TESTcase", "13")
+# 
+# plot_ltmle(combine_estimates_across_imputations(for_analysis_case17_expandedcasedef, 
+#                                                 ALT_patients_imputed_03),
+#            "7-22-TESTcase", "17")
 
 #a = transform_data_for_ltmle(ALT_weeks_with_outcomes_02)
 
@@ -379,3 +402,8 @@ for (case in cases) {
   ALT_weekly_data_for_ltmle_04 = c(ALT_weekly_data_for_ltmle_04,
                                    list(ltmle_case_prep(transform_data_for_ltmle(ALT_weeks_with_outcomes_02), case)))
 }
+
+# for (case in ALT_weekly_data_for_ltmle_04) {
+#   cat(case$weeks_with_treatments)
+#   cat("\n")
+# }

@@ -30,7 +30,10 @@ save(
 )
 
 save(
-  weekly_data_for_ltmle_04,
+  ALT_patients_imputed_03,
+  demog, comorbidities, treatment_info, outcomes, visit_data, weekly_indicators,
+  ALT_weekly_data_for_ltmle_04,
+  cases,
   file = "../Data/data_ready_for_ltmle.RData"
 )
 

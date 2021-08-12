@@ -6,7 +6,7 @@ As you run the R scripts, your `Data` folder will get populated with new tables,
 
 You will need to have installed the following R packages:
 
-`install.packages(c("tidyverse", "stringr", "lubridate", "mice", "mitools", "ltmle"))`
+`install.packages(c("tidyverse", "stringr", "lubridate", "mice", "mitools", "ltmle", "xtable", "SuperLearner", "arm", "gam", "earth", "xgboost", "xtable"))`
 
 *and maybe later: ("survival", "table1"), but not yet*
 
