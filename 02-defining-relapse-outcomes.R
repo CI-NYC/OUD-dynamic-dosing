@@ -180,14 +180,28 @@ alternate_data = all_data %>%
 # If mine was only different by a couple days, or up to 4 weeks (because of the new definition)
 # Then I decided to go with my date as potentially more accurate.
 # It's a shame it means that some are probably technically using different definitions for relapse
-# But at least preserves the original data in palces that are mysteries to me
+# But at least preserves the original data in places that are mysteries to me
 # (like where our dates were way off, or we'd come to a different conclusion about relapse overall)
 alternate_data = alternate_data %>%
   mutate(relapse_date = as_date(ifelse((relapse_24wk_date - fusedt24) <= 28 & 
                                  (relapse_24wk_date - fusedt24) > 0,
                                relapse_24wk_date,
                                fusedt24))) %>% 
-  select(-relapse_12wk_date, -relapse_24wk_date, -relapsed_7day, -relapsed_4wk, -relapse_overall)
+  select(-relapse_12wk_date, -relapse_24wk_date, -relapsed_7day, -relapsed_4wk)
+
+# What actually gets used in the LTMLE prep is the relase_this_week variable, not relapse_date
+# So I'm going back in and updating that, based on our newly-calculated relapse date
+# QUESTION: when we're doing calculations thru week 12 only, do we need to adjust?
+alternate_data = alternate_data %>% 
+  group_by(who, week_of_intervention) %>% 
+  mutate(relapse_this_week = (relapse_date %within% interval(rand_dt + weeks(week_of_intervention - 1),
+                                                             rand_dt + weeks(week_of_intervention) - 1)),
+         # NOTE: this will give FALSE if they didn't use on any days this week, but DID drop out this week.
+         #    this is corrected for in the ltmle prep code, becuase we will count weeks post-drop out as use weeks
+         #Below: if they never relapsed, mark all weeks as FALSE for relapse this week, regardless of relapse date
+         relapse_this_week = ifelse(relapse_overall == "no", FALSE, relapse_this_week),
+  ) %>% ungroup() %>% 
+  select(-relapse_overall)
 
 
 #---------------- Create data sets on the patient, visit, and week level -----------------#
