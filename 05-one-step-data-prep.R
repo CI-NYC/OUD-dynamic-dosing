@@ -1,4 +1,4 @@
-#one step data prep: you only need to run this one R script to do all data prep and create datasets before analysis
+#one step data prep: run this R script to prepare for doing ltmle analyses
 
 #---------------- Source all of the helper files to run various data prep steps -----------------#
 
@@ -11,10 +11,6 @@ source("04-ltmle-prep.R")
 
 #---------------- Save all data we might want to use later as an `RData` file -----------------#
 
-#TODO later: sort through what actually needs to be saved, get rid of the rest.
-#  write explanations of what's being output here.
-
-# TODO: put demog etc. into initial save??
 
 save(
   codebook,
@@ -26,18 +22,15 @@ save(
   ALT_weeks_with_outcomes_02,
   ALT_patients_imputed_03,
   demog, comorbidities, treatment_info, outcomes, visit_data, weekly_indicators,
-  file = "../Data/clean_combined_imputed_data.RData"
+  file = "../Data/clean_combined_imputed_data9-8-21.RData"
 )
 
 save(
   ALT_patients_imputed_03,
   demog, comorbidities, treatment_info, outcomes, visit_data, weekly_indicators,
-  ALT_weekly_data_for_ltmle_04,
-  cases,
-  file = "../Data/data_ready_for_ltmle.RData"
+  #ALT_weekly_data_for_ltmle_04,
+  ALT_weekly_data_for_ltmle_04_NEW,
+  #cases,
+  cases_NEW,
+  file = "../Data/data_ready_for_ltmle9-20-21.RData"
 )
-
-# save(
-#   results,
-#   file = "../Data/ltmle_results.RData"
-# )
