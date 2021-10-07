@@ -12,8 +12,8 @@ library(xtable)
 #set random seed for reproduceability
 set.seed(100)
 
-load("../Data/clean_combined_imputed_data.RData")
-load("~/Documents/Columbia MPH (to back up)/DSI project/ForGitHub/Data/data_ready_for_ltmle.RData")
+load("../Data/clean_combined_imputed_data9-8-21.RData")
+load("~/Documents/Columbia MPH (to back up)/DSI project/ForGitHub/Data/data_ready_for_ltmle9-20-21.RData")
 
 
 #---------------- Function: run LTMLE on each eligible outcome week -----------------#
@@ -26,103 +26,103 @@ load("~/Documents/Columbia MPH (to back up)/DSI project/ForGitHub/Data/data_read
 # 
 # case13_all_proj_up_to_12wk = run_SMALLEST_ltmle_case(ALT_weekly_data_for_ltmle_04[[1]], ALT_patients_imputed_03, 1, c("SL.glm", "SL.mean"))
 
-run_SMALLEST_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num, SL_library) {
-  #Step 1: general prep
-  #...1a: "unpack" the prepared info
-  dataset_missing_baseline_covariates = prepared_info$dataset_missing_baseline_covariates %>% select(., -medicine, -project)
-  Anodes = prepared_info$Anodes
-  Lnodes = prepared_info$Lnodes
-  Ynodes = prepared_info$Ynodes
-  abar1 = prepared_info$abar1
-  abar0 = prepared_info$abar0
-  outcome_weeks = prepared_info$outcome_weeks
-  name = prepared_info$name
-
-  #...1b: "unpack" the imputed baseline data
-  #TODO: turn this into a loop?
-  baseline_covariates = complete(mi_baseline_covariates, action = imputation_num) %>%
-    select(all_of(c(demog, comorbidities)), site)
-
-  #...1c: add baseline covariates into the dataset
-  all_data = inner_join(baseline_covariates,
-                        dataset_missing_baseline_covariates,
-                        by = "who")
-
-  #...1d: create helper variables
-  all_cols = colnames(all_data)
-  baseline_cols = colnames(baseline_covariates)
-
-  # #...1e: create an empty vector where we'll store the output from each week's LTMLE estimation
-  txest = vector("list", length(outcome_weeks))
-  txvar = vector("list", length(outcome_weeks))
-  cntest = vector("list", length(outcome_weeks))
-  cntvar = vector("list", length(outcome_weeks))
-  est = vector("list", length(outcome_weeks))
-  var = vector("list", length(outcome_weeks))
-  lci = vector("list", length(outcome_weeks))
-  uci = vector("list", length(outcome_weeks))
-
-
-  #Step 2: iterate through all outcome weeks to get estimations
-  for (i in 1:length(outcome_weeks)) {
-    #...2a: prepare the data for use in the LTMLE function:
-    #remove any columns that weren't used as A-, L-, or Y- nodes
-    unused = setdiff(all_cols, c(baseline_cols, Anodes[[i]], Lnodes[[i]], Ynodes[1:i]))
-
-    ltmle_data = all_data %>%
-      select(-all_of(unused)) %>%
-      relocate(baseline_cols, Lnodes[[i]], Anodes[[i]], Ynodes[1:i]) %>%
-      select(-who)
-
-    ltmle_data = as.data.frame(ltmle_data)
-
-    abar_this_time = list(abar1[,1:length(Anodes[[i]]), drop = FALSE], abar0[,1:length(Anodes[[i]]), drop = FALSE])
-
-    #...2b: run the ltmle function
-    output <- ltmle(
-      data = ltmle_data,
-      Anodes = Anodes[[i]],
-      Lnodes = Lnodes[[i]],
-      Ynodes = Ynodes[1:i],
-      survivalOutcome = TRUE, #TRUE means the outcome is an event that can only occur once.
-      abar = abar_this_time,
-      estimate.time = FALSE, #if TRUE, this would just compute a rough estimate of runtime based on first 50 obs
-      SL.library = SL_library,
-      variance.method = "ic"
-    )
-
-    #...2c: keep the output
-    sumout = summary(output)
-
-    txest[i] <- sumout$effect.measures$treatment$estimate
-    txvar[i] <- sumout$effect.measures$treatment$std.dev ^ 2
-
-    cntest[i] <- sumout$effect.measures$control$estimate
-    cntvar[i] <- sumout$effect.measures$control$std.dev ^ 2
-
-    est[i] <- sumout$effect.measures$ATE$estimate
-    var[i] <- sumout$effect.measures$ATE$std.dev ^ 2
-  }
-
-  #Step 3: package output together to return
-  estimates = tibble(
-    Outcome_week = outcome_weeks,
-    Treatment_estimate = txest,
-    Treatment_variance = txvar,
-    Control_estimate = cntest,
-    Control_variance = cntvar,
-    ATE_estimate = est,
-    ATE_variance = var
-  )
-
-  estimates
-}
+# run_SMALLEST_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num, SL_library) {
+#   #Step 1: general prep
+#   #...1a: "unpack" the prepared info
+#   dataset_missing_baseline_covariates = prepared_info$dataset_missing_baseline_covariates %>% select(., -medicine, -project)
+#   Anodes = prepared_info$Anodes
+#   Lnodes = prepared_info$Lnodes
+#   Ynodes = prepared_info$Ynodes
+#   abar1 = prepared_info$abar1
+#   abar0 = prepared_info$abar0
+#   outcome_weeks = prepared_info$outcome_weeks
+#   name = prepared_info$name
+# 
+#   #...1b: "unpack" the imputed baseline data
+#   #TODO: turn this into a loop?
+#   baseline_covariates = complete(mi_baseline_covariates, action = imputation_num) %>%
+#     select(all_of(c(demog, comorbidities)), site)
+# 
+#   #...1c: add baseline covariates into the dataset
+#   all_data = inner_join(baseline_covariates,
+#                         dataset_missing_baseline_covariates,
+#                         by = "who")
+# 
+#   #...1d: create helper variables
+#   all_cols = colnames(all_data)
+#   baseline_cols = colnames(baseline_covariates)
+# 
+#   # #...1e: create an empty vector where we'll store the output from each week's LTMLE estimation
+#   txest = vector("list", length(outcome_weeks))
+#   txvar = vector("list", length(outcome_weeks))
+#   cntest = vector("list", length(outcome_weeks))
+#   cntvar = vector("list", length(outcome_weeks))
+#   est = vector("list", length(outcome_weeks))
+#   var = vector("list", length(outcome_weeks))
+#   lci = vector("list", length(outcome_weeks))
+#   uci = vector("list", length(outcome_weeks))
+# 
+# 
+#   #Step 2: iterate through all outcome weeks to get estimations
+#   for (i in 1:length(outcome_weeks)) {
+#     #...2a: prepare the data for use in the LTMLE function:
+#     #remove any columns that weren't used as A-, L-, or Y- nodes
+#     unused = setdiff(all_cols, c(baseline_cols, Anodes[[i]], Lnodes[[i]], Ynodes[1:i]))
+# 
+#     ltmle_data = all_data %>%
+#       select(-all_of(unused)) %>%
+#       relocate(baseline_cols, Lnodes[[i]], Anodes[[i]], Ynodes[1:i]) %>%
+#       select(-who)
+# 
+#     ltmle_data = as.data.frame(ltmle_data)
+# 
+#     abar_this_time = list(abar1[,1:length(Anodes[[i]]), drop = FALSE], abar0[,1:length(Anodes[[i]]), drop = FALSE])
+# 
+#     #...2b: run the ltmle function
+#     output <- ltmle(
+#       data = ltmle_data,
+#       Anodes = Anodes[[i]],
+#       Lnodes = Lnodes[[i]],
+#       Ynodes = Ynodes[1:i],
+#       survivalOutcome = TRUE, #TRUE means the outcome is an event that can only occur once.
+#       abar = abar_this_time,
+#       estimate.time = FALSE, #if TRUE, this would just compute a rough estimate of runtime based on first 50 obs
+#       SL.library = SL_library,
+#       variance.method = "ic"
+#     )
+# 
+#     #...2c: keep the output
+#     sumout = summary(output)
+# 
+#     txest[i] <- sumout$effect.measures$treatment$estimate
+#     txvar[i] <- sumout$effect.measures$treatment$std.dev ^ 2
+# 
+#     cntest[i] <- sumout$effect.measures$control$estimate
+#     cntvar[i] <- sumout$effect.measures$control$std.dev ^ 2
+# 
+#     est[i] <- sumout$effect.measures$ATE$estimate
+#     var[i] <- sumout$effect.measures$ATE$std.dev ^ 2
+#   }
+# 
+#   #Step 3: package output together to return
+#   estimates = tibble(
+#     Outcome_week = outcome_weeks,
+#     Treatment_estimate = txest,
+#     Treatment_variance = txvar,
+#     Control_estimate = cntest,
+#     Control_variance = cntvar,
+#     ATE_estimate = est,
+#     ATE_variance = var
+#   )
+# 
+#   estimates
+# }
 
 
 run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num, week_cutoff) {
   #Step 1: general prep
   #...1a: "unpack" the prepared info
-  dataset_missing_baseline_covariates = prepared_info$dataset_missing_baseline_covariates %>% select(., -medicine, -project)
+  dataset_missing_baseline_covariates = prepared_info$dataset_missing_baseline_covariates %>% dplyr::select(., -medicine, -project)
   Anodes = prepared_info$Anodes
   Lnodes = prepared_info$Lnodes
   Ynodes = prepared_info$Ynodes
@@ -135,7 +135,7 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
   #...1b: "unpack" the imputed baseline data
   #TODO: turn this into a loop?
   baseline_covariates = complete(mi_baseline_covariates, action = imputation_num) %>%
-    select(all_of(c(demog, comorbidities)), site)
+    dplyr::select(all_of(c(demog, comorbidities)), site)
 
   #...1c: add baseline covariates into the dataset
   all_data = inner_join(baseline_covariates,
@@ -157,9 +157,10 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
   # cntuci = vector("list", length(outcome_weeks))
   est = vector("list", length(outcome_weeks))
   var = vector("list", length(outcome_weeks))
-  lci = vector("list", length(outcome_weeks))
-  uci = vector("list", length(outcome_weeks))
-  # rrest = vector("list", length(outcome_weeks))
+  # lci = vector("list", length(outcome_weeks))
+  # uci = vector("list", length(outcome_weeks))
+  rrest = vector("list", length(outcome_weeks))
+  rrvar = vector("list", length(outcome_weeks))
   # rrlci = vector("list", length(outcome_weeks))
   # rruci = vector("list", length(outcome_weeks))
   
@@ -171,9 +172,9 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
     unused = setdiff(all_cols, c(baseline_cols, Anodes[[i]], Lnodes[[i]], Ynodes[1:i]))
     
     ltmle_data = all_data %>%
-      select(-all_of(unused)) %>%
+      dplyr::select(-all_of(unused)) %>%
       relocate(baseline_cols, Lnodes[[i]], Anodes[[i]], Ynodes[1:i]) %>% 
-      select(-who)
+      dplyr::select(-who)
 
     ltmle_data = as.data.frame(ltmle_data)
     
@@ -190,8 +191,8 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
       #abar = list(abar1[,1:i, drop = FALSE], abar0[,1:i, drop = FALSE]),
       estimate.time = FALSE, #if TRUE, this would just compute a rough estimate of runtime based on first 50 obs
       #SL.library = NULL #if NULL, glm will be used. later, switch to super learner later
-      #SL.library = c("SL.glm", "SL.mean", "SL.earth", "SL.xgboost"),
-      SL.library = c("SL.glm", "SL.mean"),
+      SL.library = c("SL.glm", "SL.mean", "SL.earth", "SL.xgboost"),
+      #SL.library = c("SL.glm", "SL.mean"),
       variance.method = "ic"
     )
 
@@ -213,7 +214,8 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
     # lci[i] <- sumout$effect.measures$ATE$CI[1]
     # uci[i] <- sumout$effect.measures$ATE$CI[2]
     
-    # rrest[i] <- sumout$effect.measures$RR$estimate
+    rrest[i] <- sumout$effect.measures$RR$estimate
+    rrvar[i] <- sumout$effect.measures$RR$std.dev ^ 2
     # rrlci[i] <- sumout$effect.measures$RR$CI[1]
     # rruci[i] <- sumout$effect.measures$RR$CI[2]
   }
@@ -230,22 +232,17 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
     # Control_lowerCI = cntlci,
     # Control_upperCI = cntuci,
     ATE_estimate = est,
-    ATE_variance = var #,
+    ATE_variance = var,
     # ATE_lowerCI = lci,
     # ATE_upperCI = uci,
-    # RR_estimate = rrest,
+    RR_estimate = rrest,
+    RR_variance = rrvar
     # RR_lowerCI = rrlci,
     # RR_upper_CI = rruci
   )
 
   estimates
 }
-
-# case1_results1 = run_ltmle_case(for_analysis_case1_ORIGINAL, ALT_patients_imputed_03, 1)
-# case1_results2 = run_ltmle_case(for_analysis_case1_ORIGINAL, ALT_patients_imputed_03, 2)
-# case1_results3 = run_ltmle_case(for_analysis_case1_ORIGINAL, ALT_patients_imputed_03, 3)
-# case1_results4 = run_ltmle_case(for_analysis_case1_ORIGINAL, ALT_patients_imputed_03, 4)
-
 
 #---------------- Function: combine results from different imputed datasets -----------------#
 
@@ -256,10 +253,11 @@ run_ltmle_case = function(prepared_info, mi_baseline_covariates, imputation_num,
 combine_estimates_across_imputations = function(prepared_info, mi_baseline_covariates, week_cutoff = 24, only_first_iter = FALSE) {
   num_imputations = mi_baseline_covariates$m #4
   
-  prepared_info = ALT_weekly_data_for_ltmle_04[[1]]
-  mi_baseline_covariates = patients_imputed_03
-  week_cutoff = 24
-  only_first_iter = TRUE
+  ### FOR TESTING (leave commented out)
+  # prepared_info = ALT_weekly_data_for_ltmle_04[[1]]
+  # mi_baseline_covariates = patients_imputed_03
+  # week_cutoff = 24
+  # only_first_iter = TRUE
   
   if (only_first_iter) {
     num_imputations = 1
@@ -286,7 +284,7 @@ combine_estimates_across_imputations = function(prepared_info, mi_baseline_covar
     }
   }
   merged_all = merged_all %>% 
-    select("Outcome_week", sort(colnames(.)))
+    dplyr::select("Outcome_week", sort(colnames(.)))
   
   pooled_results = tibble(
     Outcome_week = numeric(),
@@ -302,6 +300,10 @@ combine_estimates_across_imputations = function(prepared_info, mi_baseline_covar
     ATE_variance = numeric(),
     ATE_lowerCI = numeric(),
     ATE_upperCI = numeric(),
+    RR_estimate = numeric(),
+    RR_variance = numeric(),
+    RR_lowerCI = numeric(),
+    RR_upperCI = numeric(),
   )
   
   # I'm sure this could all be done much more efficiently! But I can't quite figure it out.
@@ -313,39 +315,49 @@ combine_estimates_across_imputations = function(prepared_info, mi_baseline_covar
           Control_lowerCI = unlist(Control_estimate) - 1.96 * (unlist(Control_variance) ^ .5),
           Control_upperCI = unlist(Control_estimate) + 1.96 * (unlist(Control_variance) ^ .5),
           ATE_lowerCI = unlist(ATE_estimate) - 1.96 * (unlist(ATE_variance) ^ .5),
-          ATE_upperCI = unlist(ATE_estimate) + 1.96 * (unlist(ATE_variance) ^ .5)
+          ATE_upperCI = unlist(ATE_estimate) + 1.96 * (unlist(ATE_variance) ^ .5),
+          RR_lowerCI = unlist(RR_estimate) - 1.96 * (unlist(RR_variance) ^ .5),
+          RR_upperCI = unlist(RR_estimate) + 1.96 * (unlist(RR_variance) ^ .5)
         )
   } else {
     for (week in merged_all$Outcome_week) {
       this_week_only = merged_all %>% filter(Outcome_week == week)
       
       treatment_pool = MIcombine(results = as.list(unlist(
-        select(this_week_only, starts_with("Treatment_estimate")),
+        dplyr::select(this_week_only, starts_with("Treatment_estimate")),
         use.names = FALSE
       )),
       variances = as.list(unlist(
-        select(this_week_only, starts_with("Treatment_variance")),
+        dplyr::select(this_week_only, starts_with("Treatment_variance")),
         use.names = FALSE
       )))
       
       control_pool = MIcombine(results = as.list(unlist(
-        select(this_week_only, starts_with("Control_estimate")),
+        dplyr::select(this_week_only, starts_with("Control_estimate")),
         use.names = FALSE
       )),
       variances = as.list(unlist(
-        select(this_week_only, starts_with("Control_variance")),
+        dplyr::select(this_week_only, starts_with("Control_variance")),
         use.names = FALSE
       )))
       
       ATE_pool = MIcombine(results = as.list(unlist(
-        select(this_week_only, starts_with("ATE_estimate")),
+        dplyr::select(this_week_only, starts_with("ATE_estimate")),
         use.names = FALSE
       )),
       variances = as.list(unlist(
-        select(this_week_only, starts_with("ATE_variance")),
+        dplyr::select(this_week_only, starts_with("ATE_variance")),
         use.names = FALSE
       )))
       
+      RR_pool = MIcombine(results = as.list(unlist(
+        dplyr::select(this_week_only, starts_with("RR_estimate")),
+        use.names = FALSE
+      )),
+      variances = as.list(unlist(
+        dplyr::select(this_week_only, starts_with("RR_variance")),
+        use.names = FALSE
+      )))
       
       pooled_results = pooled_results %>% 
         add_row(
@@ -362,6 +374,10 @@ combine_estimates_across_imputations = function(prepared_info, mi_baseline_covar
           ATE_variance = ATE_pool$variance,
           ATE_lowerCI = ATE_pool$coefficients - 1.96 * (ATE_pool$variance ^ .5),
           ATE_upperCI = ATE_pool$coefficients + 1.96 * (ATE_pool$variance ^ .5),
+          RR_estimate = RR_pool$coefficients,
+          RR_variance = RR_pool$variance,
+          RR_lowerCI = RR_pool$coefficients - 1.96 * (RR_pool$variance ^ .5),
+          RR_upperCI = RR_pool$coefficients + 1.96 * (RR_pool$variance ^ .5),
         )
     }
   }
@@ -369,24 +385,15 @@ combine_estimates_across_imputations = function(prepared_info, mi_baseline_covar
   pooled_results
 }
 
-#z = combine_estimates_across_imputations(x, y)
 
 #---------------- Function: make a plot of the results -----------------#
 
-#TODO: deal with the list/unlist problem in the first function, instead of this one
-#TODO: check if the order of columns in the first function is working as expected (by looking into summary(output))
-#TODO: re-do Anodes, Lnodes, Ynodes based on last week's conversation
-#TODO: incorporate checks about which weeks dont have enough data
-#TODO: make a table (with # people at each week)
 
-#---DONE:
-#TODO: take out people with no relapse, don't count them as relapsed on last date
-#TODO: re-do who is excluded
-#TODO: prep for dynamic dosing rules with cutoffs
-
-
-
-plot_ltmle = function(estimates, title, id_number) {
+plot_ltmle = function(estimates = estimates, 
+                      title = title, 
+                      trt_label = "dynamic dose increase",
+                      cnt_label = "constant dose",
+                      id_number = id_number) {
 
   #Create dataframe
   datgraph <- tibble(
@@ -394,25 +401,26 @@ plot_ltmle = function(estimates, title, id_number) {
     lci = unlist(c(estimates$Treatment_lowerCI, estimates$Control_lowerCI)), 
     uci = unlist(c(estimates$Treatment_upperCI, estimates$Control_upperCI)), 
     week = unlist(rep(estimates$Outcome_week, 2)), 
-    tx = unlist(c(rep("dynamic dose increase", length(estimates$Outcome_week)), 
-                  rep("constant dose", length(estimates$Outcome_week))))
+    tx = unlist(c(rep(trt_label, length(estimates$Outcome_week)), 
+                  rep(cnt_label, length(estimates$Outcome_week))))
     )
   
   datgraph = as.data.frame(datgraph)
   
-  #Make the dynamic dose curves
-  pd <- position_dodge(0.5)
+  #Make the curves
+ # pd <- position_dodge(0.5)
   #pdf("dynamicdosecurves.pdf")
   ggplot(datgraph, aes(x=week, y=est, linetype=tx, shape=tx, group=tx)) + 
     #facet_wrap(~estimand, scales="free", labeller=label_parsed) 
     #geom_errorbar(width=.1, aes(ymin=lci, ymax=uci), position=pd)  + 
-    geom_point(position=pd, size=3) +  ylab("Risk of Relapse to OUD") + xlab("Week")   + geom_hline(yintercept=0,linetype = 2)  + geom_smooth(method="loess", se=FALSE) + theme_classic(base_size = 12, base_family = "Helvetica") +  ylim(0,1) +  theme(
+    #geom_point(position=pd, size=3) +  ylab("Risk of Relapse to OUD") + xlab("Week")   + geom_hline(yintercept=0,linetype = 2)  + geom_smooth(method="loess", se=FALSE) + theme_classic(base_size = 12, base_family = "Helvetica") +  ylim(0,1) +  theme(
+    geom_point(size=3) +  ylab("Risk of Relapse to OUD") + xlab("Week")   + geom_hline(yintercept=0,linetype = 2)  + geom_smooth(method="loess", se=FALSE) + theme_classic(base_size = 12, base_family = "Helvetica") +  ylim(0,1) +  theme(
       axis.line.x = element_line(colour = "black"),
       axis.line.y = element_line(colour = "black")
     )+theme(axis.text = element_text(size=12, colour="black"), axis.title=element_text(size=12, colour="black")) + theme(legend.position = c(.2, .9), legend.title=element_blank(), legend.text=element_text(size=12)) +
-    ggtitle(title)
+    ggtitle(title) +theme(legend.position="bottom")
   
-  ggsave(paste0(id_number, "dynamicdosecurves.pdf"), path = "../Data/Plots")
+  ggsave(paste0(id_number, "curves.pdf"), path = "../Data/Plots")
   #dev.off()
   
   #Make the average treatment effect graph
@@ -424,13 +432,13 @@ plot_ltmle = function(estimates, title, id_number) {
   ggplot(ategraph, aes(x=week, y=est)) + 
     #facet_wrap(~estimand, scales="free", labeller=label_parsed) 
     geom_errorbar(width=.1, aes(ymin=lci, ymax=uci))  + 
-    geom_point(size=3) +  ylab("Estimated difference in risk of relapse comparing dynamic to static dose" ) + xlab("Week")   + geom_hline(yintercept=0,linetype = 2)  + theme_classic(base_size = 12, base_family = "Helvetica") +    theme(
+    geom_point(size=3) +  ylab("Estimated difference in risk of relapse comparing treatment rule to control" ) + xlab("Week")   + geom_hline(yintercept=0,linetype = 2)  + theme_classic(base_size = 12, base_family = "Helvetica") +    theme(
       axis.line.x = element_line(colour = "black"),
       axis.line.y = element_line(colour = "black")
     )+theme(axis.text = element_text(size=12, colour="black"), axis.title=element_text(size=12, colour="black")) +
     ggtitle(title)
   
-  ggsave(paste0(id_number, "dynamicdoseate.pdf"), path = "../Data/Plots")
+  ggsave(paste0(id_number, "ate.pdf"), path = "../Data/Plots")
   #dev.off()
   while (!is.null(dev.list()))  dev.off()
 }
@@ -458,11 +466,11 @@ make_table1 = function(prepared_info, mi_baseline_covariates, case) {
   }
   
   combined = combined %>% 
-    mutate(ever_use = (select(., ends_with(".use_this_week")) %>% rowSums()) > 0,
-           num_dose_increases = select(., ends_with(".dose_increase_this_week")) %>% rowSums(),
+    mutate(ever_use = (dplyr::select(., ends_with(".use_this_week")) %>% rowSums()) > 0,
+           num_dose_increases = dplyr::select(., ends_with(".dose_increase_this_week")) %>% rowSums(),
            ever_increase = num_dose_increases > 0,
           #ever_responsive_increase = dose_increase_this_week & use_this_week -1,
-           max_dose = pmax(!!!rlang::syms(paste0("wk", 1:max_weeks, ".dose_this_week"))), #select(., ends_with(".dose_this_week")) %>% max(),
+           max_dose = pmax(!!!rlang::syms(paste0("wk", 1:max_weeks, ".dose_this_week"))), #dplyr::select(., ends_with(".dose_this_week")) %>% max(),
            week_of_relapse = floor(as.numeric(relapse_date - rand_dt) / 7),
            ever_relapse = !!sym(paste0("wk", max_weeks, ".relapse_this_week")) == 1,
           Never_use_Never_increase = !ever_use & !ever_increase,
@@ -471,7 +479,7 @@ make_table1 = function(prepared_info, mi_baseline_covariates, case) {
           Use_nonresponsive_increase = ever_use & ever_increase,
           Use_Responsive_increase = ever_use & ever_responsive_increase
     ) %>% 
-    select(-all_of(starts_with("wk")))
+    dplyr::select(-all_of(starts_with("wk")))
   
   allT = combined
   Never_use_Never_increaseT = combined %>% filter(Never_use_Never_increase)
@@ -483,7 +491,7 @@ make_table1 = function(prepared_info, mi_baseline_covariates, case) {
   categories = list(allT, Never_use_Never_increaseT, Never_use_Ever_increaseT,
               Use_Never_increaseT, Use_nonresponsive_increaseT, Use_Responsive_increaseT)
   
-  table1 = data.frame(nrow = 21, ncol = 6)
+  table1 = data.frame(nrow = 22, ncol = 6)
   table1 = tibble(
     name = c("All", "Never use, never increase", "Never use, ever increase",
              "Use, never increase", "Use, non-responsive increase", "Use, responsive increase"),
@@ -506,6 +514,7 @@ make_table1 = function(prepared_info, mi_baseline_covariates, case) {
     `Maximum dose (mg)` = rep("0", 6),
     `Number of dose increases` = rep("0", 6),
     `Week of relapse` = rep("0", 6),
+    `Relapse by week 12` = rep(0, 6),
     `Relapse by week 24` = rep(0, 6)
   )
   
@@ -547,6 +556,7 @@ make_table1 = function(prepared_info, mi_baseline_covariates, case) {
     table1$`Maximum dose (mg)`[i] = paste0(round(mean(data$max_dose), 1), " (", round(sd(data$max_dose), 1), ")")
     table1$`Number of dose increases`[i] = paste0(round(mean(data$num_dose_increases), 1), " (", round(sd(data$num_dose_increases), 1), ")")
     table1$`Week of relapse`[i] = paste0(round(mean(data$week_of_relapse), 1), " (", round(sd(data$week_of_relapse), 1), ")")
+    table1$`Relapse by week 12`[i] = round(sum(data$week_of_relapse <= 12) / total * 100, 1)
     table1$`Relapse by week 24`[i] = round(sum(data$ever_relapse) / total * 100, 1)
   }
   
@@ -556,55 +566,67 @@ make_table1 = function(prepared_info, mi_baseline_covariates, case) {
 }
 
 # ----------------------------------------------------------
-# JULY 8 TESTING -------------------------------------------
+# Getting Results (this ended up being done on AWS, so the code below isn't necessarily useful)
 # ----------------------------------------------------------
 
-# Compare alt and regular outcome definitions
-
-# case = weekly_data_for_ltmle_04[[1]]
-# ALT_case = ALT_weekly_data_for_ltmle_04[[1]]
-# 
-# plot_ltmle(run_ltmle_case(case, patients_imputed_03), case$name, paste0("regular_case"))
-# plot_ltmle(run_ltmle_case(ALT_case, ALT_patients_imputed_03), case$name, paste0("ALT_case"))
-# 
-# plot_ltmle(z, case1$name, paste0("thurs7-15"))
 
 case_names = list()
 for (case in cases) {
   case_names = c(case_names, case[["name"]])
 }
 
-############## Just to find best set 8-5 ##############
 
-all_proj_wk12_results_table = combine_estimates_across_imputations(ALT_weekly_data_for_ltmle_04[[13]], 
-                                                               ALT_patients_imputed_03, 
-                                                               week_cutoff = 24,
-                                                               only_first_iter = TRUE)
+results_NEW = vector(mode = "list", length = length(cases_NEW))
+results_NEW[[1]] = r[1:13]
+results_NEW[[2]] = r[14:26]
+results_NEW[[3]] = r[27:39]
 
-plot_ltmle(all_proj_wk12_results_table, cases[[13]]$name, paste0("c", i, "-8-5"))
 
-results = list()
-for (i in 20:20) {
-#for (i in 1:length(ALT_weekly_data_for_ltmle_04)) {
-  #i = 13
-  case = cases[[1]] #cases[[i]]
-  data_for_analysis = ALT_weekly_data_for_ltmle_04[[1]] #[[i]]
- # plot_ltmle(combine_estimates_across_imputations(data_for_analysis, ALT_patients_imputed_03), case$name, paste0("c", i, "-8-4"))
-
+# r = results_NEW
+# results_NEW = list()
+for (i in c(1)) { #7:length(cases_NEW)) {
+  data_for_analysis = ALT_weekly_data_for_ltmle_04_NEW[[i]]
   this_case_results_table = combine_estimates_across_imputations(data_for_analysis, 
                                                                  ALT_patients_imputed_03, 
-                                                                 week_cutoff = 20, #24,
-                                                                 only_first_iter = TRUE)
-  #result13 = this_case_results_table
+                                                                 week_cutoff = 24,
+                                                                 only_first_iter = FALSE)
   
-  results = c(results, this_case_results_table)
+  # this_case_results_table = combine_estimates_across_imputations(data_for_analysis, 
+  #                                                                ALT_patients_imputed_03, 
+  #                                                                week_cutoff = 12,
+  #                                                                only_first_iter = TRUE)
   
-  plot_ltmle(this_case_results_table, case$name, paste0("c", i, "-8-24"))
-  #table = case$weekly_counts %>% mutate(dose_mean = round(dose_mean, 2))
-  #transposed = as_tibble(cbind(nms = names(table), t(table)))
- # write_csv(make_tables(data_for_analysis, ALT_patients_imputed_03), paste0("../Data/Plots/c", i, "-7-29counts.csv"))
+  results_NEW[[i]] = this_case_results_table
+
+#for (i in 7:10) {
+  this_trt_label = ""
+  this_cnt_label = ""
+  if (cases_NEW[[i]][["responsive"]] == "comp") {
+    this_trt_label = "dose increase to threshold"
+    this_cnt_label = "dynamic dose increase"
+  } else if (cases_NEW[[i]][["responsive"]] == "hybrid") {
+    this_trt_label = "hybrid rule: dose increase to threshold, then in response to use"
+    if (cases_NEW[[i]][["dose_threshold"]] %in% c(32, 150)) {
+      this_cnt_label = "dynamic dose increase"
+    } else{
+      this_cnt_label = "dose increase to threshold"
+    }
+  } else if (cases_NEW[[i]][["responsive"]] == TRUE) {
+    this_trt_label = "dynaimc dose increase"
+    this_cnt_label = "constant dose"
+  } else {
+    this_trt_label = "dose increase to threshold"
+    this_cnt_label = "constant dose"
+  } 
+
+  plot_ltmle(estimates = results_NEW[[i]], #this_case_results_table, 
+             title = cases_NEW[[i]]$name, 
+             trt_label = this_trt_label,
+             cnt_label = this_cnt_label,
+             id_number = paste0("NEWcase", i, "-9-20"))
 }
-names(results) <- case_names[[1]]
+
+
 
 ### MAKE TABLE1s, convert to latex
 # bup_table1 = make_table1(ALT_weekly_data_for_ltmle_04[[1]], ALT_patients_imputed_03, 1)
@@ -612,20 +634,24 @@ names(results) <- case_names[[1]]
 # met_table1 = make_table1(ALT_weekly_data_for_ltmle_04[[8]], ALT_patients_imputed_03, 8)
 # xtable(met_table1)
 
-### MAKE weekly tables, convert to latex
-weekly_tables = vector(mode = "list", length = length(cases))
-for (case in 1:length(cases)) {
-  weekly_table <- ALT_weekly_data_for_ltmle_04[[i]]$weekly_counts %>% mutate(dose_mean = round(dose_mean, 2))
+### Make weekly tables, convert to latex
+#weekly_tables_NEW_24 = vector(mode = "list", length = length(cases_NEW))
+#for (case in 1:length(cases_NEW)) {
+make_weekly_table = function(case) {
+  weekly_table <- ALT_weekly_data_for_ltmle_04_NEW[[case]]$weekly_counts %>% 
+    mutate(dose_mean = round(dose_mean, 2)) %>% 
+    filter(week <= 24) #12)
   transposed <- as_tibble(cbind(nms = names(weekly_table), t(weekly_table)))
-  transposed[11,2] <- "0" #new relapses this week should be zero in the first week
-  transposed = transposed[c(1:5,11,6:10),]
+  transposed[12,2] <- "0" #new relapses this week should be zero in the first week
+  transposed = transposed[c(1:6,12,7:11),]
   names(transposed) <- NULL
   
   nice_names = c("Week",                 
   "Patients (n)",          
   "Dose increase",
   "Use last week",         
-  "Treatment",    
+  "Treatment",
+  "DELETE ME -- or alt dynamic treatment for comparisson",
   "New relapse",  
   "Dose mean",              
   "Dose median",            
@@ -635,37 +661,8 @@ for (case in 1:length(cases)) {
   
   transposed[1] <- nice_names
   
-  weekly_tables[[case]] <- transposed
+  transposed
+  #weekly_tables_NEW_24[[case]] <- transposed
   
-  print(xtable(transposed), include.rownames = FALSE)
+  #print(xtable(transposed), include.rownames = FALSE)
 }
-
-
-### SAVE TABLES
-result_tables = list(
-  bup_table1,
-  met_table1,
-  weekly_tables
-)
-
-save(
-  weekly_tables, #result_tables,
-  file = "../Data/result_tables_small_set_8-24.RData"
-)
-
-save(
-  results,
-  file = "../Data/results_small_set_8-24.RData"
-)
-
-###
-save(
-  weekly_tables, #result_tables,
-  file = "../Data/result_tables-GOODWEEKLY.RData"
-)
-
-save(
-  results,
-  file = "../Data/RESULTSthru7-glmOnly.RData"
-)
-
