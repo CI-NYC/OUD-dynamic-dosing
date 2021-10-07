@@ -3,10 +3,6 @@
 #load("../Data/clean_combined_imputed_data.Rdata")
 
 
-#QUESTIONS:
-# * When screening out weeks without enough data, are we looking for >=3 people who had a dose increase,
-#    or who fit the rule? (dose increase after use, + over some dose threshold)
-
 transform_data_for_ltmle = function(original_weekly_data) {
   weeks_with_outcomes_02 = original_weekly_data
   
@@ -19,9 +15,9 @@ transform_data_for_ltmle = function(original_weekly_data) {
   #     --> No! Keep in people who relapsed on day 21/22, as we'll be looking at their doseages
   #         during detox and it's meaningful to know whether they made it through detox or not
   
+  #only keep columns we need for LTMLE. we'll add in demographics later using imputed datasets
   ltmle_prep1 = weeks_with_outcomes_02 %>% 
-    #only keep columns we need for LTMLE. we'll add in demographics later using imputed datasets
-    select(who, switched_meds, never_initiated, rand_dt, relapse_date, medicine, project,
+    dplyr::select(who, switched_meds, never_initiated, rand_dt, relapse_date, medicine, project,
            week_of_intervention, relapse_this_week, use_this_week, dose_this_week) %>% 
     #remove anyone who switched meds (won't be able to look at their dose / dose increase)
     #remove anyone who never initiated treatment (they won't have any weekly data to analyze)
@@ -33,7 +29,7 @@ transform_data_for_ltmle = function(original_weekly_data) {
     filter(!switched_meds & !never_initiated) %>% 
     #remove weekly data for weeks past 24
     filter(week_of_intervention <= 24) %>% 
-    select(-switched_meds, -never_initiated, -rand_dt, -relapse_date)
+    dplyr::select(-switched_meds, -never_initiated, -rand_dt, -relapse_date)
   # select(-switched_meds, -never_initiated, -rand_dt, -relapse_date, -gone_before_end_of_detox)
   
   
@@ -148,7 +144,21 @@ names(caseE) = case_attributes
 caseF = list("met", c(27), 100, "Methodone (p27), comp: increase if <100mg vs. responsive dose", 24, "comp")
 names(caseF) = case_attributes
 
-cases_NEW = list(caseA, caseB, caseC, caseD, caseE, caseF)
+##
+
+caseG = list("bup", c(27, 30, 51), 16, "Buprenorphine (all 3 projects), hybrid rule vs. increase if <16mg", 24, "hybrid")
+names(caseG) = case_attributes
+
+caseH = list("bup", c(27, 30, 51), 32, "Buprenorphine (all 3 projects), hybrid rule vs. responsive dose", 24, "hybrid")
+names(caseH) = case_attributes
+
+caseI = list("met", c(27), 100, "Methodone (p27), hybrid rule vs. increase if <100mg", 24, "hybrid")
+names(caseI) = case_attributes
+
+caseJ = list("met", c(27), 150, "Methodone (p27), hybrid rule vs. responsive dose", 24, "hybrid")
+names(caseJ) = case_attributes
+
+cases_NEW = list(caseA, caseB, caseC, caseD, caseE, caseF, caseG, caseH, caseI, caseJ)
 
 #############################
 
@@ -230,7 +240,7 @@ ltmle_case_prep = function(data, case) {
   #Step 1: filter the data down to only the medicine, project, and weeks specified by the case
   filtered_data = data %>% 
     filter(project %in% case[["projects"]] & medicine == case[["medicine"]]) %>% 
-    select(-starts_with(paste0("wk", (case[["max_weeks"]]+1):25)))
+    dplyr::select(-starts_with(paste0("wk", (case[["max_weeks"]]+1):25)))
   
   #assign an absolute max for the medicine (useful in comparisson situations)
   med_max = ifelse(case[["medicine"]] == "bup", 32, 150)
@@ -252,8 +262,6 @@ ltmle_case_prep = function(data, case) {
   # }
   
   #Step 2: check whether there are enough events in each week to include that week in the analysis
-
-  #### CURRENT ISSUE: outcome_weeks is empty.
   
   #Are there any weeks (of 4-24) where no-one's outcome changed (no new relapses)?
   #...If so, exclude those weeks from the analysis alltogether.
@@ -281,10 +289,13 @@ ltmle_case_prep = function(data, case) {
                            filtered_data[[sym(paste0("wk", w - 1, ".use_this_week"))]],
                            rep(TRUE, nrow(filtered_data)))
     
+    treatA = sum(increases_this_week & under_threshold_last_week)
+    treatB = sum(increases_this_week & use_last_week & under_max_last_week)
+    
     if (case[["responsive"]] == "comp") {
-      treatA = sum(increases_this_week & under_threshold_last_week)
-      treatB = sum(increases_this_week & use_last_week & under_max_last_week)
       treatment = min(treatA, treatB) #not sure why this isn't actually choosing the min... but it's ok because they're always above 0
+    } else if (case[["responsive"]] == "hybrid") {
+      treatment = sum(treatA, treatB)
     } else {
       # this is just a hybrid that'll be correct regardless of which treatment we care about
       treatment = sum(increases_this_week & under_threshold_last_week & use_last_week)
@@ -343,6 +354,22 @@ ltmle_case_prep = function(data, case) {
     #"no treatment" = comp = dynamic dose increase = abar0
     abar0 <- I(abarA == TRUE & abarB == TRUE)
     
+  } else if (case[["responsive"]] == "hybrid") {
+    
+    #B: under the max dose AND [ (C: below our threshold) OR (above our threshold & A: had use last week) ]
+    # note - we can leave out the "above our threshold" bit because it's implied by the logic
+    abar1 <- I(abarB == TRUE & ((abarC == TRUE) | (abarA)))
+    
+    # the "no treatment" / comparisson group is either the dynamic dose or the dose increase till threshold
+    # and we can tell which by referring to the dose threshold case attribute
+    
+    if (case[["dose_threshold"]] == med_max) {
+      #cases H and J -- dynamic dose
+      abar0 <- I(abarA == TRUE & abarB == TRUE)
+    } else {
+      #cases G and I -- increase up to threshold
+      abar0 <- I(abarB == TRUE & abarC == TRUE)
+    }
   } else if (case[["responsive"]] == TRUE) {
     abar1 <- I(abarA == TRUE & abarB == TRUE)
     
