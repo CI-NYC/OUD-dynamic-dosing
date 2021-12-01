@@ -280,7 +280,8 @@ split_doses = added_dates %>%
   # fill in met_dose if that was their medicine
   mutate(met_dose = ifelse(medicine == "met", mg, NA_integer_),
          # cap at 150
-         met_dose = ifelse(met_dose > 150, 150, met_dose),
+         #KER removing the maximum dose for methadone
+        # met_dose = ifelse(met_dose > 150, 150, met_dose),
          # round down to nearest multiple of 10
          met_dose = floor(met_dose/10)*10) %>% 
   # fill in naltrexone_dose column if that was their medicine (will be either 1 or NA)
