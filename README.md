@@ -8,7 +8,6 @@ You will need to have installed the following R packages:
 
 `install.packages(c("tidyverse", "stringr", "lubridate", "mice", "mitools", "ltmle", "xtable", "SuperLearner", "arm", "gam", "earth", "xgboost"))`
 
-
 Files 0-3 include setup code for using either the provided relapse outcome definitions only, or using our own definition ("Alternative"), a hybrid taking into account the newer definition that counts a relapse at the end of the designated period of non-study opioid use, rather than the beginning. This alternative definition is used in analyses moving forward (files 4 & 6), but you can edit those to use the original definitions if needed.
 
 File 4 sets up "cases" and all the data for LTMLE (right formatting, creating treatment rules, lists of Anodes, etc.)

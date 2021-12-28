@@ -18,11 +18,7 @@ old_baseline =
   select(who, bamphetamine30_base, bcannabis30_base, bbenzo30_base) |> 
   mutate(across(everything(), factor))
 
-#---------------- Alicia note ------------------------------------#
-# this data set includes multiple ways to operationalize race.
-# I'm {Alicia} choosing to only keep racex , and remove the others
-# as well as isHispanic, which is incorporated in
-#-----------------------------------------------------------------#
+# Defining race using racex
 to_remove = c("raceg", "x2race", "x3race", "isHispanic", "i")
 not_factors = c("who", "fusedt12", "fusedt24", "when", "rand_dt", "mg", "age", "hcows")
 
@@ -32,9 +28,7 @@ visits =
   select(-bamphetamine30_base, -bcannabis30_base, -bbenzo30_base) |> 
   left_join(old_baseline, by = "who")
 
-#---------------- Alicia note ------------------------------------#
 # Convert values coded as -8/-9/-1 to NA
-#-----------------------------------------------------------------#
 visits = mutate(visits, 
   across(
     c(where(is.factor), "mg"), 
@@ -42,6 +36,7 @@ visits = mutate(visits,
   )
 ) |> droplevels()
 
+# Refactor/relevel
 binary = c("opioiduse12", "opioiduse24", "alcdisorder", "cocdisorder", "hasBrainDamage", 
            "hasEpilepsy", "hasSchiz", "hasBipolar", "hasAnxPan", "hasMajorDep", "falcohol", 
            "fdrug", "bamphetamine30_base", "bcannabis30_base", "bbenzo30_base", "ivdrug", 
@@ -106,13 +101,9 @@ visits = mutate(visits,
   when = as_date(if_else(never_initiated, ymd(rand_dt), ymd(when)))
 )
 
-#---------------- Alicia note ------------------------------------#
-# This function takes in a tibble and outputs a new tibble with new rows/visits
-# for any dates where a patient didn't have a visit recorded, but did have days on either side.
+# Add rows for missing visits
 # The new rows are repeats of whatever `medicine` and `mg` were in the previous visit
-# and `selfopioid` and `uopioid` are both set to NA regardless of previous values
-# NICK NOTE: this is no longer a function.
-#-----------------------------------------------------------------#
+# `selfopioid` and `uopioid` are both set to NA regardless of previous values
 visits = left_join(
   map_dfr(split(visits, visits$who), function(x) {
     tibble(
@@ -126,22 +117,18 @@ visits = group_by(visits, who) |>
   mutate(across(!c("selfopioid", "uopioid"), zoo::na.locf, na.rm = FALSE)) |> 
   ungroup()
 
-#---------------- Alicia note ------------------------------------#
 # Push dates back by one for the 3 patients who seem to be shifted 
 #   according to their randomization dates
-#-----------------------------------------------------------------#
 visits = 
   mutate(visits, when = case_when(
     who %in% c("0403-06-1059", "0403-06-1060", "0605-06-2005") ~ when - 1, 
     TRUE ~ when
   ))
 
-#---------------- Alicia note ------------------------------------#
 # Add a new patient-level variable: `end_of_detox` signaling 3 weeks 
 #     after their first visit, when the detoxification stage is over.
 # Add new visit-level variables: day and week, counting up from the 
 #     patient's first visit.
-#-----------------------------------------------------------------#
 visits = 
   group_by(visits, who) |> 
   mutate(
@@ -150,11 +137,9 @@ visits =
     week_of_intervention = ceiling(day_of_intervention / 7)
   )
 
-#---------------- Alicia note ------------------------------------#
 # Mark anyone who never had `mg` recorded (including `mg` always 0) 
 #   as `never_initiated.`
 # The majority of these patients also never had `medicine` recorded.
-#-----------------------------------------------------------------#
 visits = 
   group_by(visits, who) |> 
   mutate(
@@ -162,10 +147,8 @@ visits =
   ) |> 
   ungroup()
 
-#---------------- Alicia note ------------------------------------#
 # Swap medicine on the entries where mg is always blank for one 
 #   medicine, likely in error.
-#-----------------------------------------------------------------#
 visits = 
   group_by(visits, who) |> 
   mutate(
@@ -187,24 +170,20 @@ visits =
   ) |> 
   select(-num_med_1, -num_med_2, -num_med_1_blank, -num_med_2_blank, -double_meds)
 
-#---------------- Alicia note ------------------------------------#
 # Make a new column for those who switched meds at some point.
-#-----------------------------------------------------------------#
 visits = group_by(visits, who) |> 
   mutate(switched_meds = n_distinct(medicine, na.rm = TRUE) > 1) |> 
   ungroup()
 
-#---------------- Alicia note ------------------------------------#
 # Notes on dosages:
 #   
 # * Bupenorphine should go from 0 to 32, by 4s. Sometimes, it is also 
 #     supplemented with 2mg naloxone 
 #     (therefore a 6mg dosage is like 4mg bup, 2mg naloxone).
-# * Methadone should go from 0 to max, by 10s.*
+# * Methadone should go from 0 to max, by 10s.
 # * Naltrexone was always 1 (this is an injection)
 # * I also fill "medicine" and "mg" both up and down, to account for 
 #     when this information was missing
-#-----------------------------------------------------------------#
 visits = mutate(visits, 
   bup_dose = if_else(medicine == "bup", mg, NA_real_), 
   bup_dose = if_else(bup_dose > 32, 32, bup_dose),            # cap at 32 mg
@@ -216,23 +195,18 @@ visits = mutate(visits,
   naltrexone_dose = if_else(medicine == "nal", mg, NA_real_)
 )
 
-# ASK: why are we doing this?
 visits = 
-  group_by(visits, who) %>%
+  group_by(visits, who) |> 
   fill(c("medicine", "bup_dose", "naloxone_dose", "naltrexone_dose", "met_dose"), 
-       .direction = "downup") %>%
-  ungroup() %>% 
+       .direction = "downup") |> 
+  ungroup() |> 
   mutate(
     any_dose = bup_dose > 0 | naloxone_dose > 0 | met_dose > 0 | naltrexone_dose > 0, 
     any_dose = replace_na(any_dose, FALSE)
   )
 
-#---------------- Alicia note ------------------------------------#
 # Make new colums for: max_dose_this_week, any_dose_this_week, 
 #   min_nonzero_dose_this_week, dose_change_during_week
-# Moving forward, the dose perscribed this week will be understood 
-#   to be max_dose_this_week
-#-----------------------------------------------------------------#
 visits = 
   group_by(visits, who, week_of_intervention) |> 
   mutate(
@@ -266,9 +240,5 @@ visits =
   ungroup() |> 
   select(-zero_dose_add_1000)
 
-#---------------- Alicia note ------------------------------------#
-# Drop redundant or incomplete columns
-#-----------------------------------------------------------------#
-visits = select(visits, -hcows, -edu, -mar, -falcohol, -fdrug, -mg)
-
-saveRDS(visits, "data/drv/visits.rds")
+select(visits, -hcows, -edu, -mar, -falcohol, -fdrug, -mg) |> 
+  saveRDS("data/drv/clean•visits.rds")
