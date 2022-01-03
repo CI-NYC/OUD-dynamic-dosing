@@ -1,9 +1,11 @@
 library(lmtp)
+library(tidyverse)
 library(glue)
 library(kableExtra)
 
 source("R/utils.R")
-source("scripts/CopyOfalicia/04-lmtp-prep.R")
+
+visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide.rds")
 
 A = glue("wk{3:11}.dose_increase_this_week")
 Y = glue("wk{4:12}.relapse_this_week")
@@ -40,7 +42,7 @@ hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = F
 
 constant = lmtp:::shift_trt(visits_wide, glue("wk{3:11}.dose_increase_this_week"), static_binary_off)
 
-imputed = readRDS("data/fme/patients_imputed.rds")
+imputed = readRDS("data/drv/clean•patients•imputed.rds")
 
 observed = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
 dynamic = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
@@ -63,7 +65,8 @@ lmtp = function(data, tau, shifted, folds) {
     outcome_type = "survival", 
     folds = folds, 
     learners_outcome = stack, 
-    learners_trt = stack
+    learners_trt = stack, 
+    .SL_folds = 2
   )
 }
 
@@ -72,8 +75,6 @@ iterate_fits = function(obs, shifted, subset) {
     y = subset(shifted[[1]], medicine == subset)
     lmtp(x, 11, y, 1)
 }
-
-progressr::handlers(global = TRUE)
 
 fits = list(
   bup = list(
@@ -105,75 +106,57 @@ bup = visits_wide$medicine == "bup"
 met = visits_wide$medicine == "met"
 increased = visits_wide[, glue("wk{3:11}.dose_increase_this_week")] == 1
 
+# prior week use decreases as time goes on
+map(1:9, function(x) {
+  visits_wide[bup, 
+              ][(fits$bup$dynamic$density_ratios != 0)[, x], 
+                ][[glue("wk{(3:11)[x]}.use_this_week")]] |> mean()
+})
+
+# patients under threshold decreases as time goes on
+map(1:9, function(x) {
+  (visits_wide[bup, 
+              ][(fits$bup$threshold$density_ratios != 0)[, x], 
+                ][[glue("wk{(2:10)[x]}.dose_this_week")]] < 16) |> mean()
+})
+
+# produces LaTeX for counts of patients that would have increased with BUP-NX
 map_dfr(
   list(
-     `BUP-NX` = fits$bup$constant$density_ratios != 0,
-     `Methadone`= fits$met$constant$density_ratios != 0,
-     `BUP-NX`= fits$bup$dynamic$density_ratios != 0 & increased[bup, ],
-     `Methadone`= fits$met$dynamic$density_ratios != 0 & increased[met, ],
-     `BUP-NX`= fits$bup$dynamic$density_ratios != 0,
-     `Methadone`= fits$met$dynamic$density_ratios != 0,
-     `BUP-NX`= fits$bup$threshold$density_ratios != 0 & increased[bup, ],
-     `Methadone`= fits$met$threshold$density_ratios != 0 & increased[met, ],
-     `BUP-NX`= fits$bup$threshold$density_ratios != 0,
-     `Methadone`= fits$met$threshold$density_ratios != 0,
-     `BUP-NX`= fits$bup$hybrid$density_ratios != 0 & increased[bup, ],
-     `Methadone`= fits$met$hybrid$density_ratios != 0 & increased[met, ],
-     `BUP-NX`= fits$bup$hybrid$density_ratios != 0,
-     `Methadone`= fits$met$hybrid$density_ratios != 0
-  ), strategy_n, .id = "Strategy"
-) |>
-  mutate(s = c(rep("A = a", 2), rep(c("A = 1", "A = 1", "A = a", "A = a"), 3))) |> 
-  select(s, everything()) |> 
-  kbl(
-    # format = "latex", booktabs = TRUE,
-    # caption = "Number of observed patients that followed a given strategy."
-  ) |>
-  kable_paper("striped", full_width = F) |> 
-  pack_rows("Constant", 1, 2) |>
-  pack_rows("Dynamic", 3, 6) |>
-  pack_rows("Threshold", 7, 10) |>
-  pack_rows("Hybrid", 11, 14)
+    `\\hspace{1em}$\\d1$` = 
+      visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      dynamic[[1]][bup, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
+      fits$bup$constant$density_ratios != 0, 
+    `\\hspace{1em}$\\d2$` = 
+      visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      threshold[[1]][bup, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
+      fits$bup$constant$density_ratios != 0, 
+    `\\hspace{1em}$\\d3$` = 
+      visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      hybrid[[1]][bup, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
+      fits$bup$constant$density_ratios != 0
+  ), strategy_n, .id = "strategy"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE)
 
-h = c("", rep(2, times = 9))
-names(h) = c("", "Wk. 3", 4:11)
-
+# produces LaTeX for counts of patients that would have increased with Met.
 map_dfr(
   list(
-    `A = a` = fits$bup$constant$density_ratios != 0,
-    `A = 1`= fits$bup$dynamic$density_ratios != 0 & increased[bup, ],
-    `A = a`= fits$bup$dynamic$density_ratios != 0,
-    `A = 1`= fits$bup$threshold$density_ratios != 0 & increased[bup, ],
-    `A = a`= fits$bup$threshold$density_ratios != 0,
-    `A = 1`= fits$bup$hybrid$density_ratios != 0 & increased[bup, ],
-    `A = a`= fits$bup$hybrid$density_ratios != 0
-  ), strategy_n, .id = "Strategy"
-) |>
-  bind_cols(
-    map_dfr(
-      list(
-        `A = a` = fits$met$constant$density_ratios != 0,
-        `A = 1`= fits$met$dynamic$density_ratios != 0 & increased[met, ],
-        `A = a`= fits$met$dynamic$density_ratios != 0,
-        `A = 1`= fits$met$threshold$density_ratios != 0 & increased[met, ],
-        `A = a`= fits$met$threshold$density_ratios != 0,
-        `A = 1`= fits$met$hybrid$density_ratios != 0 & increased[met, ],
-        `A = a`= fits$met$hybrid$density_ratios != 0
-      ), strategy_n
-    )
-  ) |>
-  select(Strategy, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7, 16, 8, 17, 9, 18, 10, 19) |> 
-  kbl(
-    col.names = c("Strategy", rep(c("B.", "M."), times = 9)),
-    format = "latex", booktabs = TRUE,
-    caption = "Number of observed patients that followed a given strategy."
-  ) |>
-  kable_paper("striped", full_width = F) %>%
-  add_header_above(h) %>%
-  pack_rows("Constant", 1, 1) |>
-  pack_rows("Dynamic", 2, 3) |>
-  pack_rows("Threshold", 4, 5) |>
-  pack_rows("Hybrid", 6, 7)
+    `\\hspace{1em}$\\d1$` = 
+      visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      dynamic[[1]][met, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
+      fits$met$constant$density_ratios != 0, 
+    `\\hspace{1em}$\\d2$` = 
+      visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      threshold[[1]][met, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
+      fits$met$constant$density_ratios != 0, 
+    `\\hspace{1em}$\\d3$` = 
+      visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      hybrid[[1]][met, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
+      fits$met$constant$density_ratios != 0
+  ), strategy_n, .id = "strategy"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE)
 
 map_dfr(
   list(
@@ -190,8 +173,8 @@ map_dfr(
   ), strategy_n, .id = "subset"
 ) |> 
   kbl(
-    format = "latex", booktabs = TRUE,
-    caption = "Number of observed patients that were randomized to receive BUP-NX that followed a given strategy."
+    #format = "latex", booktabs = TRUE,
+    #caption = "Number of observed patients that were randomized to receive BUP-NX that followed a given strategy."
   ) |>
   kable_paper("striped", full_width = FALSE) |> 
   pack_rows("Constant", 1, 1) |>
@@ -214,8 +197,8 @@ map_dfr(
   ), strategy_n, .id = "subset"
 ) |> 
   kbl(
-    format = "latex", booktabs = TRUE,
-    caption = "Number of observed patients that were randomized to receive Methadone that followed a given strategy."
+    #format = "latex", booktabs = TRUE,
+    #caption = "Number of observed patients that were randomized to receive Methadone that followed a given strategy."
   ) |>
   kable_paper("striped", full_width = FALSE) |> 
   pack_rows("Constant", 1, 1) |>

@@ -14,6 +14,6 @@ predMatrix = setup$predictorMatrix
 predMatrix[, c("who", "site", "trt", "end_of_detox")] = 
   apply(predMatrix[, c("who", "site", "trt", "end_of_detox")], 2, \(x) 0)
 
-imputed = mice(patients, method = methods, predictorMatrix = predMatrix, m = 5, maxit = 20)
+imputed = mice(patients, method = methods, predictorMatrix = predMatrix, m = 30, maxit = 20)
 
-saveRDS(imputed, "data/drv/clean•patients•imputed.rds")
+saveRDS(imputed, "data/drv/clean•patients•imputed•30.rds")

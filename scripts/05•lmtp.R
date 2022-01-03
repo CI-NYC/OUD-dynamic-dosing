@@ -1,5 +1,6 @@
 library(lmtp)
 library(glue)
+library(tidyverse)
 
 source("R/utils.R")
 source("R/rubin.R")
@@ -42,7 +43,7 @@ hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = F
 
 constant = lmtp:::shift_trt(visits_wide, A, static_binary_off)
 
-imputed = readRDS("data/drv/patients_imputed.rds")
+imputed = readRDS("data/drv/clean•patients•imputed.rds")
 
 observed  = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
 dynamic   = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
@@ -65,14 +66,15 @@ lmtp = function(data, tau, shifted, folds) {
     sl3::Lrnr_earth
   )
   
-  lmtp_tmle(
+  lmtp_sdr(
     data, 
     A, Y, W, L, 
     shifted = shifted, 
     outcome_type = "survival", 
     folds = folds, 
     learners_outcome = stack, 
-    learners_trt = stack
+    learners_trt = stack, 
+    .SL_folds = 10
   )
 }
 
@@ -103,4 +105,4 @@ fits = list(
   )
 )
 
-saveRDS(fits, "data/drv/lmtp•fits.rds")
+saveRDS(fits, "data/drv/lmtp•fits•sdr.rds")
