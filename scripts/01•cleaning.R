@@ -188,20 +188,20 @@ visits = mutate(visits,
   bup_dose = if_else(medicine == "bup", mg, NA_real_), 
   bup_dose = if_else(bup_dose > 32, 32, bup_dose),            # cap at 32 mg
   bup_dose = floor(bup_dose / 2) * 2,                         # round down to the nearest multiple of 2
-  naloxone_dose = if_else(bup_dose %% 4 == 2, 2, 0),          # if it's still not a multiple of 4, mark 2mg of naloxone
-  bup_dose = floor(bup_dose / 4) * 4,                         # then round down to the nearest multiple of 4
+  # naloxone_dose = if_else(bup_dose %% 4 == 2, 2, 0),          # if it's still not a multiple of 4, mark 2mg of naloxone
+  # bup_dose = floor(bup_dose / 4) * 4,                         # then round down to the nearest multiple of 4
   met_dose = if_else(medicine == "met", mg, NA_real_),
-  met_dose = floor(met_dose / 10) * 10,                       # round down to the nearest multiple of 10
+  # met_dose = floor(met_dose / 10) * 10,                       # round down to the nearest multiple of 10
   naltrexone_dose = if_else(medicine == "nal", mg, NA_real_)
 )
 
 visits = 
   group_by(visits, who) |> 
-  fill(c("medicine", "bup_dose", "naloxone_dose", "naltrexone_dose", "met_dose"), 
+  fill(c("medicine", "bup_dose", "naltrexone_dose", "met_dose"), 
        .direction = "downup") |> 
   ungroup() |> 
   mutate(
-    any_dose = bup_dose > 0 | naloxone_dose > 0 | met_dose > 0 | naltrexone_dose > 0, 
+    any_dose = bup_dose > 0 | met_dose > 0 | naltrexone_dose > 0, 
     any_dose = replace_na(any_dose, FALSE)
   )
 
@@ -241,4 +241,4 @@ visits =
   select(-zero_dose_add_1000)
 
 select(visits, -hcows, -edu, -mar, -falcohol, -fdrug, -mg) |> 
-  saveRDS("data/drv/clean•visits.rds")
+  saveRDS("data/drv/clean•visits•010322.rds")

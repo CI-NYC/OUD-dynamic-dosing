@@ -1,7 +1,7 @@
 library(tidyverse)
 
 visits = 
-  readRDS("data/drv/clean•visits•with•relapse.rds") |> 
+  readRDS("data/drv/clean•visits•with•relapse•010322.rds") |> 
   distinct(who, week_of_intervention, .keep_all = TRUE)
 
 visits = 
@@ -60,4 +60,4 @@ visits_wide = pivot_wider(visits,
   ), values_fill = NA
 )
 
-saveRDS(visits_wide, "data/drv/clean•weeks•with•relapse•wide.rds")
+saveRDS(visits_wide, "data/drv/clean•weeks•with•relapse•wide•010322.rds")

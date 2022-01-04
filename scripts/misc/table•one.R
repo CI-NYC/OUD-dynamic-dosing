@@ -1,7 +1,7 @@
 library(tidyverse)
 
 source("R/utils.R")
-source("scripts/real/04•lmtp•formatting.R")
+source("scripts/04•lmtp•formatting.R")
 
 before_relapse = filter(visits, relapse_this_week == 0, week_of_intervention >= 3)
 
@@ -15,7 +15,7 @@ strata =
   mutate(relapse_week12 = relapse_week <= 12)
 
 baseline = 
-  readRDS("data/drv/clean•visits•with•relapse.rds") |> 
+  readRDS("data/drv/clean•visits•with•relapse•010322.rds") |> 
   filter(week_of_intervention <= 12, 
          !switched_meds & !never_initiated, 
          medicine %in% c("bup", "met")) |> 

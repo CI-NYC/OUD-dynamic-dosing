@@ -5,7 +5,7 @@ library(tidyverse)
 source("R/utils.R")
 source("R/rubin.R")
 
-visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide.rds")
+visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide•010322.rds")
 
 # Create datasets under hypothetical strategies ---------------------------
 
@@ -43,7 +43,7 @@ hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = F
 
 constant = lmtp:::shift_trt(visits_wide, A, static_binary_off)
 
-imputed = readRDS("data/drv/clean•patients•imputed.rds")
+imputed = readRDS("data/drv/clean•patients•imputed•010322.rds")
 
 observed  = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
 dynamic   = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
@@ -105,4 +105,4 @@ fits = list(
   )
 )
 
-saveRDS(fits, "data/drv/lmtp•fits•sdr.rds")
+saveRDS(fits, "data/drv/lmtp•fits•sdr•010322.rds")

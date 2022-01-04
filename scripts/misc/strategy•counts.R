@@ -5,7 +5,7 @@ library(kableExtra)
 
 source("R/utils.R")
 
-visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide.rds")
+visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide•010322.rds")
 
 A = glue("wk{3:11}.dose_increase_this_week")
 Y = glue("wk{4:12}.relapse_this_week")
@@ -42,7 +42,7 @@ hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = F
 
 constant = lmtp:::shift_trt(visits_wide, glue("wk{3:11}.dose_increase_this_week"), static_binary_off)
 
-imputed = readRDS("data/drv/clean•patients•imputed.rds")
+imputed = readRDS("data/drv/clean•patients•imputed•010322.rds")
 
 observed = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
 dynamic = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
@@ -123,15 +123,15 @@ map(1:9, function(x) {
 # produces LaTeX for counts of patients that would have increased with BUP-NX
 map_dfr(
   list(
-    `\\hspace{1em}$\\d1$` = 
+    `\\hspace{1em}$\\d1^a$` = 
       visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
       dynamic[[1]][bup, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
       fits$bup$constant$density_ratios != 0, 
-    `\\hspace{1em}$\\d2$` = 
+    `\\hspace{1em}$\\d2^b$` = 
       visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
       threshold[[1]][bup, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
       fits$bup$constant$density_ratios != 0, 
-    `\\hspace{1em}$\\d3$` = 
+    `\\hspace{1em}$\\d3^c$` = 
       visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
       hybrid[[1]][bup, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
       fits$bup$constant$density_ratios != 0
@@ -142,15 +142,15 @@ map_dfr(
 # produces LaTeX for counts of patients that would have increased with Met.
 map_dfr(
   list(
-    `\\hspace{1em}$\\d1$` = 
+    `\\hspace{1em}$\\d1^a$` = 
       visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
       dynamic[[1]][met, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
       fits$met$constant$density_ratios != 0, 
-    `\\hspace{1em}$\\d2$` = 
+    `\\hspace{1em}$\\d2^b$` = 
       visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
       threshold[[1]][met, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
       fits$met$constant$density_ratios != 0, 
-    `\\hspace{1em}$\\d3$` = 
+    `\\hspace{1em}$\\d3^c$` = 
       visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
       hybrid[[1]][met, glue("wk{3:11}.dose_increase_this_week")] == 1 & 
       fits$met$constant$density_ratios != 0
@@ -160,23 +160,19 @@ map_dfr(
 
 map_dfr(
   list(
-    `Total` = fits$bup$constant$density_ratios != 0,
-    `1`= fits$bup$dynamic$density_ratios != 0 & increased[bup, ],
-    `0`= fits$bup$dynamic$density_ratios != 0  & !increased[bup, ],
-    `Total` = fits$bup$dynamic$density_ratios != 0,
-    `1`= fits$bup$threshold$density_ratios != 0 & increased[bup, ],
-    `0`= fits$bup$threshold$density_ratios != 0  & !increased[bup, ],
-    `Total` = fits$bup$threshold$density_ratios != 0,
-    `1`= fits$bup$hybrid$density_ratios != 0 & increased[bup, ],
-    `0`= fits$bup$hybrid$density_ratios != 0  & !increased[bup, ],
-    `Total` = fits$bup$hybrid$density_ratios != 0
+    `\\emph{Total}` = fits$bup$constant$density_ratios != 0,
+    `Increase`= fits$bup$dynamic$density_ratios != 0 & increased[bup, ],
+    `Constant`= fits$bup$dynamic$density_ratios != 0 & !increased[bup, ],
+    `\\emph{Total}` = fits$bup$dynamic$density_ratios != 0,
+    `Increase`= fits$bup$threshold$density_ratios != 0 & increased[bup, ],
+    `Constant`= fits$bup$threshold$density_ratios != 0 & !increased[bup, ],
+    `\\hspace{1em}\\emph{Total}` = fits$bup$threshold$density_ratios != 0,
+    `Increase`= fits$bup$hybrid$density_ratios != 0 & increased[bup, ],
+    `Constant`= fits$bup$hybrid$density_ratios != 0 & !increased[bup, ],
+    `\\emph{Total}` = fits$bup$hybrid$density_ratios != 0
   ), strategy_n, .id = "subset"
 ) |> 
-  kbl(
-    #format = "latex", booktabs = TRUE,
-    #caption = "Number of observed patients that were randomized to receive BUP-NX that followed a given strategy."
-  ) |>
-  kable_paper("striped", full_width = FALSE) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE) |>
   pack_rows("Constant", 1, 1) |>
   pack_rows("Dynamic", 2, 4) |>
   pack_rows("Threshold", 5, 7) |>
@@ -184,25 +180,20 @@ map_dfr(
   
 map_dfr(
   list(
-    `Total` = fits$met$constant$density_ratios != 0,
-    `1`= fits$met$dynamic$density_ratios != 0 & increased[met, ],
-    `0`= fits$met$dynamic$density_ratios != 0  & !increased[met, ],
-    `Total` = fits$met$dynamic$density_ratios != 0,
-    `1`= fits$met$threshold$density_ratios != 0 & increased[met, ],
-    `0`= fits$met$threshold$density_ratios != 0  & !increased[met, ],
-    `Total` = fits$met$threshold$density_ratios != 0,
-    `1`= fits$met$hybrid$density_ratios != 0 & increased[met, ],
-    `0`= fits$met$hybrid$density_ratios != 0  & !increased[met, ],
-    `Total` = fits$met$hybrid$density_ratios != 0
+    `\\emph{Total}` = fits$met$constant$density_ratios != 0,
+    `Increase`= fits$met$dynamic$density_ratios != 0 & increased[met, ],
+    `Constant`= fits$met$dynamic$density_ratios != 0 & !increased[met, ],
+    `\\emph{Total}` = fits$met$dynamic$density_ratios != 0,
+    `Increase`= fits$met$threshold$density_ratios != 0 & increased[met, ],
+    `Constant`= fits$met$threshold$density_ratios != 0 & !increased[met, ],
+    `\\emph{Total}` = fits$met$threshold$density_ratios != 0,
+    `Increase`= fits$met$hybrid$density_ratios != 0 & increased[met, ],
+    `Constant`= fits$met$hybrid$density_ratios != 0 & !increased[met, ],
+    `\\emph{Total}` = fits$met$hybrid$density_ratios != 0
   ), strategy_n, .id = "subset"
 ) |> 
-  kbl(
-    #format = "latex", booktabs = TRUE,
-    #caption = "Number of observed patients that were randomized to receive Methadone that followed a given strategy."
-  ) |>
-  kable_paper("striped", full_width = FALSE) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE) |>
   pack_rows("Constant", 1, 1) |>
   pack_rows("Dynamic", 2, 4) |>
   pack_rows("Threshold", 5, 7) |>
   pack_rows("Hybrid", 8, 10)
-
