@@ -8,7 +8,7 @@ by_day = readRDS("data/drv/clean•visits•with•relapse•010322.rds") |>
 
 before_relapse = filter(visits, 
   relapse_this_week == 0, 
-  week_of_intervention > 3, 
+  week_of_intervention >= 2, 
   week_of_intervention < 12
 )
 
