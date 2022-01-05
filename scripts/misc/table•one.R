@@ -15,7 +15,7 @@ strata =
   mutate(relapse_week12 = relapse_week <= 12)
 
 baseline = 
-  readRDS("data/drv/clean•visits•with•relapse•010322.rds") |> 
+  readRDS("data/drv/clean•visits•with•relapse•010422.rds") |> 
   filter(week_of_intervention <= 12, 
          !switched_meds & !never_initiated, 
          medicine %in% c("bup", "met")) |> 

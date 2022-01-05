@@ -113,7 +113,10 @@ visits = left_join(
   }), visits
 )
 
-visits = group_by(visits, who) |> 
+visits = mutate(visits, mg = na_if(mg, 0))
+
+visits = 
+  group_by(visits, who) |> 
   mutate(across(!c("selfopioid", "uopioid"), zoo::na.locf, na.rm = FALSE)) |> 
   ungroup()
 
@@ -175,23 +178,19 @@ visits = group_by(visits, who) |>
   mutate(switched_meds = n_distinct(medicine, na.rm = TRUE) > 1) |> 
   ungroup()
 
+visits = filter(visits, !never_initiated, !switched_meds)
+
 # Notes on dosages:
 #   
-# * Bupenorphine should go from 0 to 32, by 4s. Sometimes, it is also 
-#     supplemented with 2mg naloxone 
-#     (therefore a 6mg dosage is like 4mg bup, 2mg naloxone).
-# * Methadone should go from 0 to max, by 10s.
-# * Naltrexone was always 1 (this is an injection)
-# * I also fill "medicine" and "mg" both up and down, to account for 
-#     when this information was missing
+# * Bupenorphine should go from 2 to 32, by 2s
+# * Fill "medicine" and "mg" both up and down, to 
+#   account for when this information was missing
 visits = mutate(visits, 
   bup_dose = if_else(medicine == "bup", mg, NA_real_), 
   bup_dose = if_else(bup_dose > 32, 32, bup_dose),            # cap at 32 mg
+  bup_dose = if_else(bup_dose == 1, 2, bup_dose),
   bup_dose = floor(bup_dose / 2) * 2,                         # round down to the nearest multiple of 2
-  # naloxone_dose = if_else(bup_dose %% 4 == 2, 2, 0),          # if it's still not a multiple of 4, mark 2mg of naloxone
-  # bup_dose = floor(bup_dose / 4) * 4,                         # then round down to the nearest multiple of 4
   met_dose = if_else(medicine == "met", mg, NA_real_),
-  # met_dose = floor(met_dose / 10) * 10,                       # round down to the nearest multiple of 10
   naltrexone_dose = if_else(medicine == "nal", mg, NA_real_)
 )
 
@@ -200,45 +199,16 @@ visits =
   fill(c("medicine", "bup_dose", "naltrexone_dose", "met_dose"), 
        .direction = "downup") |> 
   ungroup() |> 
-  mutate(
-    any_dose = bup_dose > 0 | met_dose > 0 | naltrexone_dose > 0, 
-    any_dose = replace_na(any_dose, FALSE)
-  )
-
-# Make new colums for: max_dose_this_week, any_dose_this_week, 
-#   min_nonzero_dose_this_week, dose_change_during_week
-visits = 
-  group_by(visits, who, week_of_intervention) |> 
+  group_by(who, week_of_intervention) |> 
   mutate(
     max_dose_this_week = case_when(
       medicine == "bup" ~ max(bup_dose),
       medicine == "met" ~ max(met_dose),
       medicine == "nal" ~ max(naltrexone_dose),
       TRUE ~ 0
-    ), 
-    any_dose_this_week = max_dose_this_week > 0, 
-    zero_dose_add_1000 = case_when(
-      medicine == "bup" ~ as.numeric(ifelse(bup_dose == 0, 1000, bup_dose)),
-      medicine == "met" ~ as.numeric(ifelse(met_dose == 0, 1000, met_dose)),
-      medicine == "nal" ~ as.numeric(naltrexone_dose),
-      TRUE ~ 0
-    ), 
-    min_nonzero_dose_this_week = if_else(
-      any_dose_this_week,
-      case_when(
-        medicine == "bup" ~ min(zero_dose_add_1000),
-        medicine == "met" ~ min(zero_dose_add_1000),
-        medicine == "nal" ~ min(naltrexone_dose),
-        TRUE ~ 0), 0
-    ), 
-    min_nonzero_dose_this_week = if_else(
-      min_nonzero_dose_this_week == 1000, 0, 
-      min_nonzero_dose_this_week
-    ),
-    dose_change_during_week = max_dose_this_week != min_nonzero_dose_this_week
+    )
   ) |> 
-  ungroup() |> 
-  select(-zero_dose_add_1000)
+  ungroup()
 
 select(visits, -hcows, -edu, -mar, -falcohol, -fdrug, -mg) |> 
-  saveRDS("data/drv/clean•visits•010322.rds")
+  saveRDS("data/drv/clean•visits•010422.rds")

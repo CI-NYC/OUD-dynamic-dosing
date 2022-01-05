@@ -5,7 +5,7 @@ library(kableExtra)
 
 source("R/utils.R")
 
-visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide•010322.rds")
+visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide•010422.rds")
 
 A = glue("wk{3:11}.dose_increase_this_week")
 Y = glue("wk{4:12}.relapse_this_week")
@@ -42,7 +42,7 @@ hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = F
 
 constant = lmtp:::shift_trt(visits_wide, glue("wk{3:11}.dose_increase_this_week"), static_binary_off)
 
-imputed = readRDS("data/drv/clean•patients•imputed•010322.rds")
+imputed = readRDS("data/drv/clean•patients•imputed•010422.rds")
 
 observed = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
 dynamic = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
@@ -166,7 +166,7 @@ map_dfr(
     `\\emph{Total}` = fits$bup$dynamic$density_ratios != 0,
     `Increase`= fits$bup$threshold$density_ratios != 0 & increased[bup, ],
     `Constant`= fits$bup$threshold$density_ratios != 0 & !increased[bup, ],
-    `\\hspace{1em}\\emph{Total}` = fits$bup$threshold$density_ratios != 0,
+    `\\emph{Total}` = fits$bup$threshold$density_ratios != 0,
     `Increase`= fits$bup$hybrid$density_ratios != 0 & increased[bup, ],
     `Constant`= fits$bup$hybrid$density_ratios != 0 & !increased[bup, ],
     `\\emph{Total}` = fits$bup$hybrid$density_ratios != 0
@@ -177,7 +177,7 @@ map_dfr(
   pack_rows("Dynamic", 2, 4) |>
   pack_rows("Threshold", 5, 7) |>
   pack_rows("Hybrid", 8, 10)
-  
+   
 map_dfr(
   list(
     `\\emph{Total}` = fits$met$constant$density_ratios != 0,

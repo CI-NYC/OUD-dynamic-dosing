@@ -5,7 +5,7 @@ library(kableExtra)
 
 source("R/rubin.R")
 
-fits <- readRDS("data/drv/lmtp•fits•sdr•010322.rds")
+fits <- readRDS("data/drv/lmtp•fits•sdr•010422.rds")
 
 combine = \(fits) map_dfr(1:9, \(t) rubins_rules(map(fits, \(x) x[[t]]), t + 3))
 
@@ -173,7 +173,7 @@ map(c(dynamic = "dynamic", threshold = "threshold"),
 # Figures -----------------------------------------------------------------
 
 # Produce Figure 1a
-ragg::agg_png("figures/bup•nx•sdr•010322.png", width = 8, height = 4.5, units = "cm", res = 400)
+ragg::agg_png("figures/bup•nx•sdr•010422.png", width = 8, height = 4.5, units = "cm", res = 400)
 
 wrap_plots(
   {
@@ -273,7 +273,7 @@ wrap_plots(
 dev.off()
 
 # Produce Figure 1b
-ragg::agg_png("figures/methadone•sdr•010322.png", width = 8, height = 4.5, units = "cm", res = 400)
+ragg::agg_png("figures/methadone•sdr•010422.png", width = 8, height = 4.5, units = "cm", res = 400)
 
 wrap_plots(
   {
@@ -376,7 +376,7 @@ wrap_plots(
 dev.off()
 
 # Produce Figure A1a
-ragg::agg_png("figures/A1•bup•nx•sdr•010322.png", width = 8, height = 4.5, units = "cm", res = 400)
+ragg::agg_png("figures/A1•bup•nx•sdr•010422.png", width = 8, height = 4.5, units = "cm", res = 400)
 
 map(c(dynamic = "dynamic", threshold = "threshold"), 
     \(x) fits$bup[[x]]) |>
@@ -426,7 +426,7 @@ map(c(dynamic = "dynamic", threshold = "threshold"),
 dev.off()
 
 # Produce Figure A1b
-ragg::agg_png("figures/A1•methadone•sdr•010322.png", width = 8, height = 4.5, units = "cm", res = 400)
+ragg::agg_png("figures/A1•methadone•sdr•010422.png", width = 8, height = 4.5, units = "cm", res = 400)
 
 map(c(dynamic = "dynamic", threshold = "threshold"), 
     \(x) fits$met[[x]]) |>

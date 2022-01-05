@@ -1,14 +1,15 @@
 library(tidyverse)
 
 visits = 
-  readRDS("data/drv/clean•visits•with•relapse•010322.rds") |> 
+  readRDS("data/drv/clean•visits•with•relapse•010422.rds") |> 
   distinct(who, week_of_intervention, .keep_all = TRUE)
 
 visits = 
   filter(
     visits, 
     !switched_meds & !never_initiated, 
-    week_of_intervention <= 24
+    week_of_intervention <= 24, 
+    medicine %in% c("met", "bup")
   ) |> 
   group_by(who, week_of_intervention) |> 
   mutate(dose_this_week = max_dose_this_week) |> 
@@ -27,9 +28,9 @@ visits =
       TRUE, use_this_week
     ), 
     dose_this_week = if_else(
-      is.na(dose_this_week) & (week_of_intervention %in% c(2, 3, 4)), 
-      0, dose_this_week
-    ), 
+      is.na(dose_this_week) & (week_of_intervention %in% c(2, 3, 4)),
+      zoo::na.locf(dose_this_week), dose_this_week
+    ),
     relapse_this_week = if_else(
       is.na(relapse_this_week) & (week_of_intervention %in% c(2, 3)), 
       0, relapse_this_week
@@ -60,4 +61,4 @@ visits_wide = pivot_wider(visits,
   ), values_fill = NA
 )
 
-saveRDS(visits_wide, "data/drv/clean•weeks•with•relapse•wide•010322.rds")
+saveRDS(visits_wide, "data/drv/clean•weeks•with•relapse•wide•010422.rds")

@@ -3,7 +3,7 @@ library(lubridate)
 
 source("R/utils.R")
 
-visits = readRDS("data/drv/clean•visits•010322.rds")
+visits = readRDS("data/drv/clean•visits•010422.rds")
 
 # a positive urine test
 # OR selfopioid is yes
@@ -93,7 +93,7 @@ dates =
     )
   )
 
-saveRDS(dates, "data/drv/patient•dates•010322.rds")
+saveRDS(dates, "data/drv/patient•dates•010422.rds")
 
 visits = 
   left_join(visits, select(dates, who, relapse_date)) |> 
@@ -102,16 +102,16 @@ visits =
          relapse_overall = !is.na(relapse_date)) |> 
   ungroup()
 
-saveRDS(visits, "data/drv/clean•visits•with•relapse•010322.rds")
+saveRDS(visits, "data/drv/clean•visits•with•relapse•010422.rds")
 
 patients = 
   distinct(visits, who, .keep_all = TRUE) |> 
   select(who, any_of(c(demog, comorbidities, treatment_info, outcomes)))
 
-saveRDS(patients, "data/drv/clean•patients•with•relapse•010322.rds")
+saveRDS(patients, "data/drv/clean•patients•with•relapse•010422.rds")
 
 weeks = 
   distinct(visits, who, week_of_intervention, .keep_all = TRUE) |> 
   select(who, any_of(c(demog, comorbidities, treatment_info, outcomes, weekly_indicators)))
 
-saveRDS(weeks, "data/drv/clean•weeks•with•relapse•010322.rds")
+saveRDS(weeks, "data/drv/clean•weeks•with•relapse•010422.rds")
