@@ -22,7 +22,7 @@ baseline =
   select(who, any_of(c(demog, treatment_info, comorbidities))) |> 
   distinct(who, .keep_all = TRUE) |> 
   left_join(strata) |> 
-  select(-switched_meds, -never_initiated, -rand_dt, -end_of_detox, -who, -project, -site) 
+  select(-switched_meds, -never_initiated, -rand_dt, -end_of_detox, -who, -site) 
 
 pmean = \(x, ...) sprintf("%0.1f\\%%", mean(x, na.rm = TRUE) * 100)
 cmean = \(x, ...) sprintf("%.2f", mean(x, na.rm = TRUE))
@@ -31,6 +31,9 @@ csd = \(x, ...) sprintf("%.2f", sd(x, na.rm = TRUE))
 stats = function(data, ...) {
   summarise(data,
     n = n(), 
+    trial_27 = pmean(project == "27"), 
+    trial_30 = pmean(project == "30"), 
+    trial_51 = pmean(project == "51"),
     women = pmean(sex == "female"), 
     age_sd = csd(age), 
     age = cmean(age), 
@@ -85,6 +88,10 @@ glue::glue(
   \\multicolumn{6}{l}{\\textbf{BUP-NX}} \\\\ 
   \\midrule
   N & <bup$n> & <bnu$n> & <bu$n> & <bni$n> & <bi$n> \\\\ 
+  \\multicolumn{6}{l}{Trial} \\\\ 
+  \\hspace{1em} CTN0027 & <bup$trial_27> & <bnu$trial_27> & <bu$trial_27> & <bni$trial_27> & <bi$trial_27> \\\\ 
+  \\hspace{1em} CTN0030 & <bup$trial_30> & <bnu$trial_30> & <bu$trial_30> & <bni$trial_30> & <bi$trial_30> \\\\ 
+  \\hspace{1em} CTN0051 & <bup$trial_51> & <bnu$trial_51> & <bu$trial_51> & <bni$trial_51> & <bi$trial_51> \\\\ 
   Age & <bup$age> (<bup$age_sd>) & <bnu$age> (<bnu$age_sd>) & <bu$age> (<bu$age_sd>) & <bni$age> (<bni$age_sd>) & <bi$age> (<bi$age_sd>) \\\\ 
   Women & <bup$women> & <bnu$women> & <bu$women> & <bni$women> & <bi$women> \\\\ 
   \\multicolumn{6}{l}{Race/ethnicity} \\\\ 

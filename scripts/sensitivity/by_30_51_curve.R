@@ -5,15 +5,18 @@ library(kableExtra)
 
 source("R/rubin.R")
 
-fits <- readRDS("data/drv/lmtp•fits•sdr•010422.rds")
+fits <- readRDS("data/drv/lmtp•fits•30•51•sdr.rds")
 
 combine = \(fits) map_dfr(1:9, \(t) rubins_rules(map(fits, \(x) x[[t]]), t + 3))
 
 risk_diff = function(x, ref) {
   result = map(1:5, function(i) {
     map2(x[[i]], ref[[i]], function(x, y) {
-      x$theta = 1 - x$theta
-      y$theta = 1 - y$theta
+      if (x$outcome_type == "survival") {
+        x$theta = 1 - x$theta
+        y$theta = 1 - y$theta
+      }
+
       lmtp_contrast(x, ref = y)
     })
   })
@@ -25,8 +28,10 @@ risk_diff = function(x, ref) {
 risk_ratio = function(x, ref) {
   result = map(1:5, function(i) {
     map2(x[[i]], ref[[i]], function(x, y) {
-      x$theta = 1 - x$theta
-      y$theta = 1 - y$theta
+      if (x$outcome_type == "survival") {
+        x$theta = 1 - x$theta
+        y$theta = 1 - y$theta
+      }
       lmtp_contrast(x, ref = y, type = "rr")
     })
   })
@@ -39,8 +44,8 @@ risk_ratio = function(x, ref) {
 
 # Produces basic LaTeX code for Table A1, results are added to the clipboard
 map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
-    \(x) fits$bup[[x]]) |>
-  map_dfr(\(x) risk_diff(x, ref = fits$bup$constant), .id = "strategy") |> 
+    \(x) fits[[x]]) |>
+  map_dfr(\(x) risk_diff(x, ref = fits$constant), .id = "strategy") |> 
   mutate(
     strategy = case_when(
       strategy == "dynamic" ~ "d1", 
@@ -108,8 +113,8 @@ map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"),
 
 # Produces basic LaTeX code for Table A2, results are added to the clipboard
 map(c(dynamic = "dynamic", threshold = "threshold"), 
-    \(x) fits$bup[[x]]) |>
-  map_dfr(\(x) risk_diff(x, ref = fits$bup$hybrid), .id = "strategy") |> 
+    \(x) fits[[x]]) |>
+  map_dfr(\(x) risk_diff(x, ref = fits$hybrid), .id = "strategy") |> 
   mutate(
     strategy = case_when(
       strategy == "dynamic" ~ "d1", 
@@ -173,18 +178,19 @@ map(c(dynamic = "dynamic", threshold = "threshold"),
 # Figures -----------------------------------------------------------------
 
 # Produce Figure 1a
-ragg::agg_png("figures/bup•nx•sdr•010422.png", width = 8, height = 4.5, units = "cm", res = 400)
+ragg::agg_png("figures/bup•nx•30•51•sdr.png", width = 8, height = 4.5, units = "cm", res = 400)
 
 wrap_plots(
   {
-    map_dfr(fits$bup, combine, .id = "strategy") |>
+    map_dfr(fits, combine, .id = "strategy") |>
       mutate(
         strategy = factor(case_when(
           strategy == "constant" ~ "d4", 
           strategy == "dynamic" ~ "d1", 
           strategy == "threshold" ~ "d2", 
           strategy == "hybrid" ~ "d3"
-        ), levels = c("d1", "d2", "d3", "d4"))
+        ), levels = c("d1", "d2", "d3", "d4")), 
+        theta = ifelse(label == 4, 1 - theta, theta)
       ) |> 
       ggplot(aes(x = label, y = 1 - theta, color = strategy)) +
       geom_step(size = 0.2) + 
@@ -214,8 +220,8 @@ wrap_plots(
       guides(guide_legend(override.aes = list(size = 0.5)))
   }, {
     map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
-        \(x) fits$bup[[x]]) |>
-      map_dfr(\(x) risk_diff(x, ref = fits$bup$constant), .id = "strategy") |> 
+        \(x) fits[[x]]) |>
+      map_dfr(\(x) risk_diff(fits$constant, ref = x), .id = "strategy") |> 
       mutate(
         strategy = factor(case_when(
           strategy == "constant" ~ "d4", 
@@ -239,7 +245,7 @@ wrap_plots(
         size = 0.2
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
-      scale_y_continuous(limits = c(-0.18, 0.02)) + 
+      scale_y_continuous(limits = c(-0.15, 0.15)) + 
       scale_x_continuous(breaks = 4:12, labels = c("Wk. 4", 5:12), 
                          limits = c(3.75, 12.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(
@@ -474,3 +480,7 @@ map(c(dynamic = "dynamic", threshold = "threshold"),
   guides(shape = guide_legend(override.aes = list(size = 0.5)))
 
 dev.off()
+
+# weights figure ----------------------------------------------------------
+
+lapply(fits$bup, \(x) hist(as.vector(x[[1]][[9]]$density_ratios)))

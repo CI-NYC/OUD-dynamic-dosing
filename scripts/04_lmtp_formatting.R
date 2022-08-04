@@ -44,7 +44,7 @@ visits =
 
 visits = 
   mutate(
-    visits, 
+    visits,
     dose_increase_this_week = dose_this_week > lag(dose_this_week, default = 0), 
     dose_increase_this_week = ifelse(relapse_this_week, FALSE, dose_increase_this_week),
     across(c("relapse_this_week", "use_this_week", "dose_increase_this_week"), as.numeric)

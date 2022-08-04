@@ -4,3 +4,4 @@
 .Ruserdata
 data/
 ._*
+.DS_Store

@@ -50,6 +50,30 @@ visits =
   mutate(relapse_overall = any(days_of_use == 7 | weeks_of_use == 4)) |> 
   ungroup()
 
+filter(visits, !in_detox) |> 
+  group_by(who) |> 
+  mutate(days_7 = any(days_of_use == 7), 
+         weeks_4 = any(weeks_of_use == 4)) |> 
+  filter(!days_7 & weeks_4) |> 
+  select(who) |> 
+  unique()
+
+filter(visits, !in_detox) |> 
+  group_by(who) |> 
+  mutate(days_7 = any(days_of_use == 7), 
+         weeks_4 = any(weeks_of_use == 4)) |> 
+  filter(days_7 & !weeks_4) |> 
+  select(who) |> 
+  unique()
+
+filter(visits, !in_detox) |> 
+  group_by(who) |> 
+  mutate(days_7 = any(days_of_use == 7), 
+         weeks_4 = any(weeks_of_use == 4)) |> 
+  filter(days_7 | weeks_4) |> 
+  select(who) |> 
+  unique()
+
 relapse_dates = 
   split(visits, visits$who) |> 
   map_dfr(function(data) {
@@ -67,12 +91,20 @@ relapse_dates =
         tibble(relapse_date_4week = out)
       }, .id = "who")
   }) |> 
-  mutate(relapse_date = case_when(
-    is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ NA_Date_, 
-    is.na(relapse_date_7day) ~ relapse_date_4week, 
-    is.na(relapse_date_4week) ~ relapse_date_7day,
-    TRUE ~ pmin(relapse_date_7day, relapse_date_4week)
-  ))
+  mutate(
+    relapse_date = case_when(
+      is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ NA_Date_, 
+      is.na(relapse_date_7day) ~ relapse_date_4week, 
+      is.na(relapse_date_4week) ~ relapse_date_7day,
+      TRUE ~ pmin(relapse_date_7day, relapse_date_4week)), 
+    relapse_date_type = case_when(
+      is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ "none", 
+      is.na(relapse_date_7day) ~ "4 weeks", 
+      is.na(relapse_date_4week) ~ "7 days",
+      TRUE ~ ifelse(pmin(relapse_date_7day, relapse_date_4week) == relapse_date_7day, 
+                    "7 days", "4 weeks")
+    )
+  )
 
 dates =
   left_join(

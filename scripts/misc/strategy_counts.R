@@ -56,7 +56,7 @@ lmtp = function(data, tau, shifted, folds) {
   L = lapply(3:tau, \(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
   Y = glue("wk{4:(tau + 1)}.relapse_this_week")
   
-  stack = sl3::make_learner(sl3::Lrnr_mean)
+  stack = sl3::make_learner_stack(sl3::Lrnr_mean, sl3::Lrnr_glm)
   
   lmtp_tmle(
     data, 
@@ -118,6 +118,18 @@ map(1:9, function(x) {
   (visits_wide[bup, 
               ][(fits$bup$threshold$density_ratios != 0)[, x], 
                 ][[glue("wk{(2:10)[x]}.dose_this_week")]] < 16) |> mean()
+})
+
+map(1:9, function(x) {
+  visits_wide[met, 
+  ][(fits$met$dynamic$density_ratios != 0)[, x], 
+  ][[glue("wk{(3:11)[x]}.use_this_week")]] |> mean()
+})
+
+map(1:9, function(x) {
+  (visits_wide[met, 
+  ][(fits$met$threshold$density_ratios != 0)[, x], 
+  ][[glue("wk{(2:10)[x]}.dose_this_week")]] < 100) |> mean()
 })
 
 # produces LaTeX for counts of patients that would have increased with BUP-NX
@@ -197,3 +209,93 @@ map_dfr(
   pack_rows("Dynamic", 2, 4) |>
   pack_rows("Threshold", 5, 7) |>
   pack_rows("Hybrid", 8, 10)
+
+# were observed as increasing, but didn't increase under the strategy...
+map_dfr(
+  list(
+    Dynamic = fits$bup$dynamic$density_ratios == 0 & 
+      increased[bup, ] & 
+      visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0,
+    Threshold = fits$bup$threshold$density_ratios == 0 & 
+      increased[bup, ] & 
+      visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0,
+    Hybrid = fits$bup$hybrid$density_ratios == 0 & 
+      increased[bup, ] & 
+      visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0
+  ), strategy_n, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE)
+
+map_dfr(
+  list(
+    Dynamic = fits$met$dynamic$density_ratios == 0 & 
+      increased[met, ] & 
+      visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0,
+    Threshold = fits$met$threshold$density_ratios == 0 & 
+      increased[met, ] & 
+      visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0,
+    Hybrid = fits$met$hybrid$density_ratios == 0 & 
+      increased[met, ] & 
+      visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0
+  ), strategy_n, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE)
+
+strategy_mean = function(x) {
+  colnames(x) = c("Wk. 3", 4:11)
+  colMeans(x, na.rm = TRUE) |>
+    as_tibble(rownames = "time") |>
+    pivot_wider(
+      names_from = "time",
+      values_from = "value"
+    )
+}
+
+map_dfr(
+  list(
+    `Prior week use` = visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      condA[bup, ],
+    `Dose under threshold` = visits_wide[bup, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      condB[bup, ]
+  ), strategy_mean, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE, digits = 2)
+
+map_dfr(
+  list(
+    `Prior week use` = (visits_wide[, glue("wk{4:12}.relapse_this_week")] == 0 & condA)[bup & proj27, ],
+    `Dose under threshold` = (visits_wide[, glue("wk{4:12}.relapse_this_week")] == 0 & condB)[bup & proj27, ]
+  ), strategy_mean, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE, digits = 2)
+
+proj27 = visits_wide$project == "27"
+proj30 = visits_wide$project == "30"
+proj51 = visits_wide$project == "51"
+
+map_dfr(
+  list(
+    `Prior week use` = (visits_wide[, glue("wk{4:12}.relapse_this_week")] == 0 & condA)[bup & proj30, ],
+    `Dose under threshold` = (visits_wide[, glue("wk{4:12}.relapse_this_week")] == 0 & condB)[bup & proj30, ]
+  ), strategy_mean, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE, digits = 2)
+
+map_dfr(
+  list(
+    `Prior week use` = (visits_wide[, glue("wk{4:12}.relapse_this_week")] == 0 & condA)[bup & proj51, ],
+    `Dose under threshold` = (visits_wide[, glue("wk{4:12}.relapse_this_week")] == 0 & condB)[bup & proj51, ]
+  ), strategy_mean, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE, digits = 2)
+
+# metformin only comes from the one trial
+map_dfr(
+  list(
+    `Prior week use` = visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      condA[met, ],
+    `Dose under threshold` = visits_wide[met, glue("wk{4:12}.relapse_this_week")] == 0 & 
+      condB[met, ]
+  ), strategy_mean, .id = "subset"
+) |> 
+  kbl(format = "latex", booktabs = TRUE, escape = FALSE, digits = 2)
