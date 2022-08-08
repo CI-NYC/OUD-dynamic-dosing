@@ -5,7 +5,7 @@ library(tidyverse)
 source("R/utils.R")
 source("R/rubin.R")
 
-visits_wide = readRDS("data/drv/clean•weeks•with•relapse•wide•010422.rds")
+visits_wide = readRDS("data/drv/clean_weeks_with_relapse_wide_080422.rds")
 
 # Create datasets under hypothetical strategies ---------------------------
 
@@ -43,7 +43,7 @@ hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = F
 
 constant = lmtp:::shift_trt(visits_wide, A, static_binary_off)
 
-imputed = readRDS("data/drv/clean•patients•imputed•010422.rds")
+imputed = readRDS("data/drv/clean_patients_imputed_080422.rds")
 
 observed  = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
 dynamic   = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
@@ -55,26 +55,27 @@ constant  = map(1:5, \(x) left_join(constant, mice::complete(imputed, x)))
 
 lmtp = function(data, tau, shifted, folds) {
   A = glue("wk{3:tau}.dose_increase_this_week")
-  W = c(demog, comorbidities, "site")
+  W = c(demog, comorbidities, "project")
   L = lapply(3:tau, \(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
   Y = glue("wk{4:(tau + 1)}.relapse_this_week")
   
-  stack = sl3::make_learner_stack(
-    sl3::Lrnr_glm, 
-    sl3::Lrnr_mean, 
-    sl3::Lrnr_xgboost, 
-    sl3::Lrnr_earth
-  )
+  # stack = sl3::make_learner_stack(
+  #   sl3::Lrnr_glm, 
+  #   sl3::Lrnr_xgboost, 
+  #   sl3::Lrnr_earth
+  # )
+  stack = c("SL.glm", "SL.mean", "SL.xgboost", "SL.earth")
   
   lmtp_sdr(
     data, 
     A, Y, W, L, 
     shifted = shifted, 
-    outcome_type = "survival", 
+    outcome_type = ifelse(tau == 3, "binomial", "survival"), 
     folds = folds, 
     learners_outcome = stack, 
     learners_trt = stack, 
-    .SL_folds = 10
+    .learners_outcome_folds = 10, 
+    .learners_trt_folds = 10
   )
 }
 
@@ -85,8 +86,6 @@ iterate_fits = function(obs, shifted, subset) {
     lapply(3:11, \(tau) lmtp(x, tau, y, 1))
   })
 }
-
-progressr::handlers(global = TRUE)
 
 set.seed(43634)
 
@@ -105,4 +104,4 @@ fits = list(
   )
 )
 
-saveRDS(fits, "data/drv/lmtp•fits•sdr•010422.rds")
+saveRDS(fits, "data/drv/lmtp_fits_sdr_080422.rds")

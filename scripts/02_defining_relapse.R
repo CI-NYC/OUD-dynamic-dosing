@@ -3,7 +3,7 @@ library(lubridate)
 
 source("R/utils.R")
 
-visits = readRDS("data/drv/clean•visits•010422.rds")
+visits = readRDS("data/drv/clean_visits_080422.rds")
 
 # a positive urine test
 # OR selfopioid is yes
@@ -50,29 +50,29 @@ visits =
   mutate(relapse_overall = any(days_of_use == 7 | weeks_of_use == 4)) |> 
   ungroup()
 
-filter(visits, !in_detox) |> 
-  group_by(who) |> 
-  mutate(days_7 = any(days_of_use == 7), 
-         weeks_4 = any(weeks_of_use == 4)) |> 
-  filter(!days_7 & weeks_4) |> 
-  select(who) |> 
-  unique()
-
-filter(visits, !in_detox) |> 
-  group_by(who) |> 
-  mutate(days_7 = any(days_of_use == 7), 
-         weeks_4 = any(weeks_of_use == 4)) |> 
-  filter(days_7 & !weeks_4) |> 
-  select(who) |> 
-  unique()
-
-filter(visits, !in_detox) |> 
-  group_by(who) |> 
-  mutate(days_7 = any(days_of_use == 7), 
-         weeks_4 = any(weeks_of_use == 4)) |> 
-  filter(days_7 | weeks_4) |> 
-  select(who) |> 
-  unique()
+# filter(visits, !in_detox) |> 
+#   group_by(who) |> 
+#   mutate(days_7 = any(days_of_use == 7), 
+#          weeks_4 = any(weeks_of_use == 4)) |> 
+#   filter(!days_7 & weeks_4) |> 
+#   select(who) |> 
+#   unique()
+# 
+# filter(visits, !in_detox) |> 
+#   group_by(who) |> 
+#   mutate(days_7 = any(days_of_use == 7), 
+#          weeks_4 = any(weeks_of_use == 4)) |> 
+#   filter(days_7 & !weeks_4) |> 
+#   select(who) |> 
+#   unique()
+# 
+# filter(visits, !in_detox) |> 
+#   group_by(who) |> 
+#   mutate(days_7 = any(days_of_use == 7), 
+#          weeks_4 = any(weeks_of_use == 4)) |> 
+#   filter(days_7 | weeks_4) |> 
+#   select(who) |> 
+#   unique()
 
 relapse_dates = 
   split(visits, visits$who) |> 
@@ -91,20 +91,22 @@ relapse_dates =
         tibble(relapse_date_4week = out)
       }, .id = "who")
   }) |> 
+  left_join(unique(select(visits, who, fusedt24))) |> 
   mutate(
     relapse_date = case_when(
-      is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ NA_Date_, 
+      is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ fusedt24, 
       is.na(relapse_date_7day) ~ relapse_date_4week, 
       is.na(relapse_date_4week) ~ relapse_date_7day,
-      TRUE ~ pmin(relapse_date_7day, relapse_date_4week)), 
-    relapse_date_type = case_when(
-      is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ "none", 
-      is.na(relapse_date_7day) ~ "4 weeks", 
-      is.na(relapse_date_4week) ~ "7 days",
-      TRUE ~ ifelse(pmin(relapse_date_7day, relapse_date_4week) == relapse_date_7day, 
-                    "7 days", "4 weeks")
-    )
+      TRUE ~ pmin(relapse_date_7day, relapse_date_4week))
   )
+  #   , relapse_date_type = case_when(
+  #     is.na(relapse_date_7day) & is.na(relapse_date_4week) ~ "none", 
+  #     is.na(relapse_date_7day) ~ "4 weeks", 
+  #     is.na(relapse_date_4week) ~ "7 days",
+  #     TRUE ~ ifelse(pmin(relapse_date_7day, relapse_date_4week) == relapse_date_7day, 
+  #                   "7 days", "4 weeks")
+  #   )
+  # )
 
 dates =
   left_join(
@@ -125,25 +127,26 @@ dates =
     )
   )
 
-saveRDS(dates, "data/drv/patient•dates•010422.rds")
+saveRDS(dates, "data/drv/patient_dates_080422.rds")
 
 visits = 
   left_join(visits, select(dates, who, relapse_date)) |> 
   group_by(who, week_of_intervention) |> 
-  mutate(relapsed = as.numeric(!is.na(relapse_date) & relapse_date <= max(when)), 
-         relapse_overall = !is.na(relapse_date)) |> 
+  # select(who, when, week_of_intervention, relapse_date)
+  mutate(relapsed = as.numeric(!is.na(relapse_date) & relapse_date <= max(when)),
+         relapse_overall = !is.na(relapse_date)) |>
   ungroup()
 
-saveRDS(visits, "data/drv/clean•visits•with•relapse•010422.rds")
+saveRDS(visits, "data/drv/clean_visits_with_relapse_080422.rds")
 
 patients = 
   distinct(visits, who, .keep_all = TRUE) |> 
   select(who, any_of(c(demog, comorbidities, treatment_info, outcomes)))
 
-saveRDS(patients, "data/drv/clean•patients•with•relapse•010422.rds")
+saveRDS(patients, "data/drv/clean_patients_with_relapse_080422.rds")
 
 weeks = 
   distinct(visits, who, week_of_intervention, .keep_all = TRUE) |> 
   select(who, any_of(c(demog, comorbidities, treatment_info, outcomes, weekly_indicators)))
 
-saveRDS(weeks, "data/drv/clean•weeks•with•relapse•010422.rds")
+saveRDS(weeks, "data/drv/clean_weeks_with_relapse_080422.rds")
