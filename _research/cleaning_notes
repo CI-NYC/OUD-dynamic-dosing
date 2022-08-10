@@ -1,0 +1,42 @@
+#---------------- Alicia note ------------------------------------#
+# Some notes and conclusions from exploring the data (code not included):
+# 
+# * 28 patients never initiated treatment (missing `when`, only one entry for them)
+# * Everyone got randomized
+# * No one got randomized multiple times.
+# * No one has a visit before their randomization date.
+# * Almost all patients have their first visit on their randomization date.
+# * However, 3 patients have first visits one day later. (`0403-06-1059, 0403-06-1060, 0605-06-2005`).
+# * **Decision:** I'm shifting all dates for these patients one day earlier, 
+#     as if their first visit happened on their randomization date.
+# * No one has more than one visit on the same day.
+# * 64 patients only had 1 visit (0 days between first and last visit, we know there are no 
+#     repeat visits on the same day)
+# * 1114 patients had exactly 174 days between their first and last visit (~6 months)
+# * 174 was the maximum date range, so we know there are no outliers on the high or low end
+# * All visit dates are always consecutive, except for 32 patients missing a couple days 
+#     right before their last day
+# * **Decision:** We'll create new rows for those days copying the `medicine` and `mg` 
+#     from the previous day, and putting NA in the `selfopioid` and `uopioid` columns.
+# 
+# * 79 patients never had `medicine` or `mg > 0` recorded
+# * 11 patients had a `medicine` recorded, but never `mg > 0`
+# * **Decision:** People in the two cases above were marked as `never_initiated`.
+# 
+# * There are 44 patients whose medicine switched at some point. They were all in project 27, 
+#     and all had only medicines 1 & 2.
+# * I think if they only ever got `0 mg` of their "other med", then it was probably a mistake.
+# * There are 12 people who seemed to genuinely switch meds (about half then switched back after a couple visits).
+# * One person was assigned to `trt=1` and got bupenorphine the first day, and methadone every subsequent day.
+#      It's not quite the same as "switched meds", but it also doesn't look like a mistake?
+# * **Decision:**
+#   * **I made a new column `switched_meds`, TRUE for those 13 patients identified above.**
+#   * **I made another new column `med_switch_date` to capture the date of the first medication 
+#     switch for those patients.**
+#   * **I corrected what I thoguht were errors in the `medicine` column, according to the following rule:**
+#   * **If there is one medicine they had marked, but never actually received any doseage of it
+#       --> recode that medicine to be whatever the "majority" medicine was that that patient received
+# * Only 23+191=214 people are in the "wrong" medicine according to trt.
+# * All of these are the `switched_meds` patients, so I don't think there are any remaining 
+#     errors in the `medicine` or `trt` columns
+#-----------------------------------------------------------------#

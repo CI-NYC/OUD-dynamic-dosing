@@ -1,107 +1,91 @@
 library(lmtp)
 library(glue)
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 
-source("R/utils.R")
-source("R/rubin.R")
+source("scripts/covariates.R")
 
-visits_wide = readRDS("data/drv/clean_weeks_with_relapse_wide_080422.rds")
+visits_wide <- readRDS("data/drv/clean_weeks_with_relapse_wide_080922.rds")
+imputed <- readRDS("data/drv/clean_patients_imputed_080922.rds")
 
 # Create datasets under hypothetical strategies ---------------------------
 
 # Was there previous time opioid use? 
-condA <- visits_wide[, glue("wk{3:11}.use_this_week")] == 1
+condA <- visits_wide[, glue("wk{2:11}.use_this_week")] == 1
 
 # Was dose under the allowable maximum? 
 condB <- matrix(FALSE, dim(condA)[1], dim(condA)[2])
 condB[visits_wide$medicine == "bup", ] <- 
-  visits_wide[visits_wide$medicine == "bup", glue("wk{3:11}.dose_this_week")] < 32
+  visits_wide[visits_wide$medicine == "bup", glue("wk{2:11}.dose_this_week")] < 32
 condB[visits_wide$medicine == "met", ] <- 
-  visits_wide[visits_wide$medicine == "met", glue("wk{3:11}.dose_this_week")] < 397
+  visits_wide[visits_wide$medicine == "met", glue("wk{2:11}.dose_this_week")] < 397
 
 # Was dose under the dose threshold? 
 condC <- matrix(FALSE, dim(condA)[1], dim(condA)[2])
 condC[visits_wide$medicine == "bup", ] <- 
-  visits_wide[visits_wide$medicine == "bup", glue("wk{3:11}.dose_this_week")] < 16
+  visits_wide[visits_wide$medicine == "bup", glue("wk{2:11}.dose_this_week")] < 16
 condC[visits_wide$medicine == "met", ] <- 
-  visits_wide[visits_wide$medicine == "met", glue("wk{3:11}.dose_this_week")] < 100
+  visits_wide[visits_wide$medicine == "met", glue("wk{2:11}.dose_this_week")] < 100
 
-A = glue("wk{3:11}.dose_increase_this_week")
+A <- glue("wk{2:11}.dose_increase_this_week")
 
 colnames(condA) <- A
 colnames(condB) <- A
 colnames(condC) <- A
 
-dynamic = visits_wide
-dynamic[, A] <- apply(condA & condB, 2, \(x) as.numeric(x), simplify = FALSE)
+dynamic <- visits_wide
+dynamic[, A] <- apply(condA & condB, 2, function(x) as.numeric(x))
 
-threshold = visits_wide
-threshold[, A] = apply(condC, 2, \(x) as.numeric(x), simplify = FALSE)
+threshold <- visits_wide
+threshold[, A] <- apply(condC, 2, function(x) as.numeric(x))
 
-hybrid = visits_wide
-hybrid[, A] = apply(condC | (condB & condA), 2, \(x) as.numeric(x), simplify = FALSE)
+hybrid <- visits_wide
+hybrid[, A] <- apply(condC | (condB & condA), 2, function(x) as.numeric(x))
 
-constant = lmtp:::shift_trt(visits_wide, A, static_binary_off)
-
-imputed = readRDS("data/drv/clean_patients_imputed_080422.rds")
-
-observed  = map(1:5, \(x) left_join(visits_wide, mice::complete(imputed, x)))
-dynamic   = map(1:5, \(x) left_join(dynamic, mice::complete(imputed, x)))
-threshold = map(1:5, \(x) left_join(threshold, mice::complete(imputed, x)))
-hybrid    = map(1:5, \(x) left_join(hybrid, mice::complete(imputed, x)))
-constant  = map(1:5, \(x) left_join(constant, mice::complete(imputed, x)))
+constant <- lmtp:::shift_trt(visits_wide, A, static_binary_off)
 
 # LMTP --------------------------------------------------------------------
 
-lmtp = function(data, tau, shifted, folds) {
-  A = glue("wk{3:tau}.dose_increase_this_week")
-  W = c(demog, comorbidities, "project")
-  L = lapply(3:tau, \(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
-  Y = glue("wk{4:(tau + 1)}.relapse_this_week")
-  
-  # stack = sl3::make_learner_stack(
-  #   sl3::Lrnr_glm, 
-  #   sl3::Lrnr_xgboost, 
-  #   sl3::Lrnr_earth
-  # )
-  stack = c("SL.glm", "SL.mean", "SL.xgboost", "SL.earth")
-  
-  lmtp_sdr(
-    data, 
-    A, Y, W, L, 
-    shifted = shifted, 
-    outcome_type = ifelse(tau == 3, "binomial", "survival"), 
-    folds = folds, 
-    learners_outcome = stack, 
-    learners_trt = stack, 
-    .learners_outcome_folds = 10, 
-    .learners_trt_folds = 10
-  )
+node <- Sys.getenv("SGE_TASK_ID")
+task_list <- expand.grid(imp = 1:5, 
+                         med = c("bup", "met"), 
+                         tau = 3:11, 
+                         strat = c("constant", "dynamic", "threshold", "hybrid"), 
+                         stringsAsFactors = FALSE)
+
+task <- task_list[node, ]
+observed <- left_join(visits_wide, mice::complete(imputed, task$imp))
+observed <- observed[as.character(observed$medicine) == task$med, ]
+
+shifted <- list("dynamic" = dynamic, 
+                "threshold" = threshold, 
+                "hybrid" = hybrid, 
+                "constant" = constant)[[task$strat]]
+shifted <- left_join(shifted, mice::complete(imputed, task$imp))
+shifted <- shifted[as.character(shifted$medicine) == task$med, ]
+
+A <- glue("wk{3:task$tau}.dose_increase_this_week")
+
+if (task$med == "bup") {
+  W <- c(demog, comorbidities, "project")
+} else {
+  W <- c(demog, comorbidities)
 }
 
-iterate_fits = function(obs, shifted, subset) {
-  lapply(1:5, function(i) {
-    x = subset(obs[[i]], medicine == subset)
-    y = subset(shifted[[i]], medicine == subset)
-    lapply(3:11, \(tau) lmtp(x, tau, y, 1))
-  })
-}
+L <- lapply(3:task$tau, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
+Y <- glue("wk{4:(task$tau + 1)}.relapse_this_week")
 
-set.seed(43634)
+stack <- c("SL.glm", "SL.mean", "SL.ranger", "SL.earth")
 
-fits = list(
-  bup = list(
-    dynamic = iterate_fits(observed, dynamic, "bup"), 
-    threshold = iterate_fits(observed, threshold, "bup"), 
-    hybrid = iterate_fits(observed, hybrid, "bup"), 
-    constant = iterate_fits(observed, constant, "bup")
-  ), 
-  met = list(
-    dynamic = iterate_fits(observed, dynamic, "met"), 
-    threshold = iterate_fits(observed, threshold, "met"), 
-    hybrid = iterate_fits(observed, hybrid, "met"), 
-    constant = iterate_fits(observed, constant, "met")
-  )
-)
+seed <- round(runif(1, 1000, 1e5))
+set.seed(seed)
 
-saveRDS(fits, "data/drv/lmtp_fits_sdr_080422.rds")
+fit <- lmtp_sdr(observed, 
+                A, Y, W, L, 
+                shifted = shifted, 
+                outcome_type = ifelse(task$tau == 3, "binomial", "survival"), 
+                folds = 1, 
+                learners_outcome = stack, 
+                learners_trt = stack)
+
+saveRDS(list(seed = seed, fit = fit), 
+        paste0("data/fits/", do.call(paste, c(task, sep = "_")), ".rds"))

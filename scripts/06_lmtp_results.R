@@ -1,37 +1,48 @@
 library(lmtp)
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 library(patchwork)
 library(kableExtra)
+library(glue)
 
 source("R/rubin.R")
 
-fits <- readRDS("data/drv/lmtp•fits•sdr•010422.rds")
-
-combine = \(fits) map_dfr(1:9, \(t) rubins_rules(map(fits, \(x) x[[t]]), t + 3))
-
-risk_diff = function(x, ref) {
-  result = map(1:5, function(i) {
-    map2(x[[i]], ref[[i]], function(x, y) {
-      x$theta = 1 - x$theta
-      y$theta = 1 - y$theta
-      lmtp_contrast(x, ref = y)
-    })
-  })
-  
-  map(1:9, \(i) map(result, \(x) x[[i]])) |> 
-    map2_dfr(4:12, rubins_rules)
+fits <- list()
+for (med in c("met", "bup")) {
+  fits[[med]] <- list()
+  for (strat in c("constant", "dynamic", "threshold", "hybrid")) {
+    fits[[med]][[strat]] <- list()
+    for (imp in 1:5) {
+      fits[[med]][[strat]][[imp]] <- list()
+      for (t in 1:9) {
+        fits[[med]][[strat]][[imp]][[t]] <- 
+          readRDS(glue("data/fits/{imp}_{med}_{t+2}_{strat}.rds"))
+      }
+    }
+  }
 }
 
-risk_ratio = function(x, ref) {
-  result = map(1:5, function(i) {
-    map2(x[[i]], ref[[i]], function(x, y) {
-      x$theta = 1 - x$theta
+combine <- \(fits) map_dfr(1:9, \(t) rubins_rules(map(fits, \(x) x[[t]]$fit), t + 3))
+
+contrast <- function(x, ref, type = c("additive", "rr")) {
+  ans <- list()
+  for (imp in 1:5) {
+    ans[[imp]] <- list()
+    for (t in 1:9) {
+      fit <- pluck(x, imp, t, "fit")
+      y <- pluck(ref, imp, t, "fit")
+      
+      if (t == 1) {
+        ans[[imp]][[t]] <- lmtp_contrast(fit, ref = y, type = match.arg(type))
+        next
+      }
+      
+      fit$theta = 1 - fit$theta
       y$theta = 1 - y$theta
-      lmtp_contrast(x, ref = y, type = "rr")
-    })
-  })
+      ans[[imp]][[t]] <- lmtp_contrast(fit, ref = y, type = match.arg(type))
+    }
+  }
   
-  map(1:9, \(i) map(result, \(x) x[[i]])) |> 
+  map(1:9, \(i) map(ans, \(x) x[[i]])) |> 
     map2_dfr(4:12, rubins_rules)
 }
 
@@ -40,7 +51,7 @@ risk_ratio = function(x, ref) {
 # Produces basic LaTeX code for Table A1, results are added to the clipboard
 map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
     \(x) fits$bup[[x]]) |>
-  map_dfr(\(x) risk_diff(x, ref = fits$bup$constant), .id = "strategy") |> 
+  map_dfr(\(x) contrast(x, ref = fits$bup$constant), .id = "strategy") |> 
   mutate(
     strategy = case_when(
       strategy == "dynamic" ~ "d1", 
@@ -54,7 +65,7 @@ map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"),
   left_join({
     map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
         \(x) fits$met[[x]]) |>
-      map_dfr(\(x) risk_diff(x, ref = fits$met$constant), .id = "strategy") |> 
+      map_dfr(\(x) contrast(x, ref = fits$met$constant), .id = "strategy") |> 
       mutate(
         strategy = case_when(
           strategy == "dynamic" ~ "d1", 
@@ -69,7 +80,7 @@ map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"),
   left_join({
     map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
         \(x) fits$bup[[x]]) |>
-      map_dfr(\(x) risk_ratio(x, ref = fits$bup$constant), .id = "strategy") |> 
+      map_dfr(\(x) contrast(x, ref = fits$bup$constant, "rr"), .id = "strategy") |> 
       mutate(
         strategy = case_when(
           strategy == "dynamic" ~ "d1", 
@@ -83,7 +94,7 @@ map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"),
       left_join({
         map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
             \(x) fits$met[[x]]) |>
-          map_dfr(\(x) risk_ratio(x, ref = fits$met$constant), .id = "strategy") |> 
+          map_dfr(\(x) contrast(x, ref = fits$met$constant, "rr"), .id = "strategy") |> 
           mutate(
             strategy = case_when(
               strategy == "dynamic" ~ "d1", 
@@ -173,19 +184,18 @@ map(c(dynamic = "dynamic", threshold = "threshold"),
 # Figures -----------------------------------------------------------------
 
 # Produce Figure 1a
-ragg::agg_png("figures/bup•nx•sdr•010422.png", width = 8, height = 4.5, units = "cm", res = 400)
+ragg::agg_png("figures/combined_sdr_080922.png", width = 8, height = 4.5, units = "cm", res = 400)
 
 wrap_plots(
   {
     map_dfr(fits$bup, combine, .id = "strategy") |>
-      mutate(
-        strategy = factor(case_when(
-          strategy == "constant" ~ "d4", 
-          strategy == "dynamic" ~ "d1", 
-          strategy == "threshold" ~ "d2", 
-          strategy == "hybrid" ~ "d3"
-        ), levels = c("d1", "d2", "d3", "d4"))
-      ) |> 
+      mutate(strategy = factor(case_when(
+        strategy == "constant" ~ "d4", 
+        strategy == "dynamic" ~ "d1", 
+        strategy == "threshold" ~ "d2", 
+        strategy == "hybrid" ~ "d3"
+      ), levels = c("d1", "d2", "d3", "d4")), 
+      theta = if_else(label == 4, 1 - theta, theta)) |> 
       ggplot(aes(x = label, y = 1 - theta, color = strategy)) +
       geom_step(size = 0.2) + 
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
@@ -215,7 +225,7 @@ wrap_plots(
   }, {
     map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
         \(x) fits$bup[[x]]) |>
-      map_dfr(\(x) risk_diff(x, ref = fits$bup$constant), .id = "strategy") |> 
+      map_dfr(\(x) contrast(x, ref = fits$bup$constant), .id = "strategy") |> 
       mutate(
         strategy = factor(case_when(
           strategy == "constant" ~ "d4", 
@@ -239,7 +249,7 @@ wrap_plots(
         size = 0.2
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
-      scale_y_continuous(limits = c(-0.18, 0.02)) + 
+      scale_y_continuous(limits = c(-0.18, 0.05)) + 
       scale_x_continuous(breaks = 4:12, labels = c("Wk. 4", 5:12), 
                          limits = c(3.75, 12.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(
