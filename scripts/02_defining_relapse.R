@@ -68,7 +68,7 @@ relapse_dates <- who_7_day |>
 
 relapse_dates <- mutate(relapse_dates, 
                         relapse_date = if_else(
-                          between(as.numeric(relapse_date - fusedt24), 1, 28), 
+                          between(abs(as.numeric(relapse_date - fusedt24)), 1, 28), 
                           relapse_date, 
                           fusedt24
                         ))

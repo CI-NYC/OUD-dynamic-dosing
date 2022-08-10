@@ -48,7 +48,7 @@ constant <- lmtp:::shift_trt(visits_wide, A, static_binary_off)
 node <- Sys.getenv("SGE_TASK_ID")
 task_list <- expand.grid(imp = 1:5, 
                          med = c("bup", "met"), 
-                         tau = 3:11, 
+                         tau = 2:11, 
                          strat = c("constant", "dynamic", "threshold", "hybrid"), 
                          stringsAsFactors = FALSE)
 
@@ -63,7 +63,7 @@ shifted <- list("dynamic" = dynamic,
 shifted <- left_join(shifted, mice::complete(imputed, task$imp))
 shifted <- shifted[as.character(shifted$medicine) == task$med, ]
 
-A <- glue("wk{3:task$tau}.dose_increase_this_week")
+A <- glue("wk{2:task$tau}.dose_increase_this_week")
 
 if (task$med == "bup") {
   W <- c(demog, comorbidities, "project")
@@ -71,8 +71,8 @@ if (task$med == "bup") {
   W <- c(demog, comorbidities)
 }
 
-L <- lapply(3:task$tau, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
-Y <- glue("wk{4:(task$tau + 1)}.relapse_this_week")
+L <- lapply(2:task$tau, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
+Y <- glue("wk{3:(task$tau + 1)}.relapse_this_week")
 
 stack <- c("SL.glm", "SL.mean", "SL.ranger", "SL.earth")
 
@@ -82,7 +82,7 @@ set.seed(seed)
 fit <- lmtp_sdr(observed, 
                 A, Y, W, L, 
                 shifted = shifted, 
-                outcome_type = ifelse(task$tau == 3, "binomial", "survival"), 
+                outcome_type = ifelse(task$tau == 2, "binomial", "survival"), 
                 folds = 1, 
                 learners_outcome = stack, 
                 learners_trt = stack)

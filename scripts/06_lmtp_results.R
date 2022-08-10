@@ -13,21 +13,21 @@ for (med in c("met", "bup")) {
     fits[[med]][[strat]] <- list()
     for (imp in 1:5) {
       fits[[med]][[strat]][[imp]] <- list()
-      for (t in 1:9) {
+      for (t in 1:10) {
         fits[[med]][[strat]][[imp]][[t]] <- 
-          readRDS(glue("data/fits/{imp}_{med}_{t+2}_{strat}.rds"))
+          readRDS(glue("data/fits/{imp}_{med}_{t+1}_{strat}.rds"))
       }
     }
   }
 }
 
-combine <- \(fits) map_dfr(1:9, \(t) rubins_rules(map(fits, \(x) x[[t]]$fit), t + 3))
+combine <- \(fits) map_dfr(1:10, \(t) rubins_rules(map(fits, \(x) x[[t]]$fit), t + 2))
 
 contrast <- function(x, ref, type = c("additive", "rr")) {
   ans <- list()
   for (imp in 1:5) {
     ans[[imp]] <- list()
-    for (t in 1:9) {
+    for (t in 1:10) {
       fit <- pluck(x, imp, t, "fit")
       y <- pluck(ref, imp, t, "fit")
       
@@ -42,8 +42,8 @@ contrast <- function(x, ref, type = c("additive", "rr")) {
     }
   }
   
-  map(1:9, \(i) map(ans, \(x) x[[i]])) |> 
-    map2_dfr(4:12, rubins_rules)
+  map(1:10, \(i) map(ans, \(x) x[[i]])) |> 
+    map2_dfr(3:12, rubins_rules)
 }
 
 # Tables ------------------------------------------------------------------
@@ -195,12 +195,12 @@ wrap_plots(
         strategy == "threshold" ~ "d2", 
         strategy == "hybrid" ~ "d3"
       ), levels = c("d1", "d2", "d3", "d4")), 
-      theta = if_else(label == 4, 1 - theta, theta)) |> 
+      theta = if_else(label == 3, 1 - theta, theta)) |> 
       ggplot(aes(x = label, y = 1 - theta, color = strategy)) +
       geom_step(size = 0.2) + 
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
-      scale_x_continuous(breaks = 4:12, labels = c("Wk. 4", 5:12), 
-                         limits = c(3.75, 12.25), expand = c(0, .2)) + 
+      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
+                         limits = c(2.75, 12.25), expand = c(0, .2)) + 
       # scale_linetype_manual(
       #   values = c("solid", "dashed", "dotted", "dotdash")
       # ) + 
@@ -250,8 +250,8 @@ wrap_plots(
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
       scale_y_continuous(limits = c(-0.18, 0.05)) + 
-      scale_x_continuous(breaks = 4:12, labels = c("Wk. 4", 5:12), 
-                         limits = c(3.75, 12.25), expand = c(0, 0.2)) + 
+      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
+                         limits = c(2.75, 12.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(
       #   drop = FALSE, 
       #   values = c("solid", "dashed", "dotted", "dotdash")

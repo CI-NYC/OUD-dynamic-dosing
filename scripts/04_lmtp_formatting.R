@@ -1,17 +1,17 @@
 suppressPackageStartupMessages(library(tidyverse))
 
-visits <- readRDS("data/drv/clean_visits_with_relapse_080422.rds") |> 
+visits <- readRDS("data/drv/clean_visits_with_relapse_080922.rds") |> 
   distinct(who, week_of_intervention, .keep_all = TRUE)
 
 visits <- filter(visits, 
-                 !switched_meds & !never_initiated, 
+                 #!switched_meds & !never_initiated, 
                  week_of_intervention <= 12, 
                  medicine %in% c("met", "bup"))
 
 visits <- group_by(visits, who, week_of_intervention) |> 
   mutate(dose_this_week = max_dose_this_week) |> 
   ungroup() |> 
-  select(who, medicine, project, week_of_intervention, use_this_week, dose_this_week, relapse_this_week = relapsed)
+  select(who, medicine, project, week_of_intervention, use_this_week, dose_this_week, relapse_this_week = relapse)
 
 visits <- right_join(visits, expand(visits, who, week_of_intervention)) |> 
   arrange(who, week_of_intervention) |> 
