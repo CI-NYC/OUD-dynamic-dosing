@@ -1,12 +1,11 @@
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 
-source("R/utils.R")
-source("scripts/04•lmtp•formatting.R")
+source("scripts/covariates.R")
+source("scripts/04_lmtp_formatting.R")
 
-before_relapse = filter(visits, relapse_this_week == 0, week_of_intervention >= 3)
+before_relapse <- filter(visits, relapse_this_week == 0, week_of_intervention >= 2)
 
-strata = 
-  group_by(before_relapse, who) |> 
+strata <- group_by(before_relapse, who) |> 
   summarise(relapse_week = min(max(week_of_intervention) + 1, 24), 
             no_increases = sum(dose_increase_this_week),
             max_dose = max(dose_this_week),
@@ -14,8 +13,7 @@ strata =
             any_increase = any(as.logical(dose_increase_this_week))) |> 
   mutate(relapse_week12 = relapse_week <= 12)
 
-baseline = 
-  readRDS("data/drv/clean•visits•with•relapse•010422.rds") |> 
+baseline <- readRDS("data/drv/clean_visits_with_relapse_080922.rds") |> 
   filter(week_of_intervention <= 12, 
          !switched_meds & !never_initiated, 
          medicine %in% c("bup", "met")) |> 
