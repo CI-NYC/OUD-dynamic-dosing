@@ -1,3 +1,3 @@
 # 
 
-> R code for *How different buprenorphine & methadone dosing strategies reduce risk of relapse in the treatment of opioid use disorder*
+> R code for *Buprenorphine & methadone dosing strategies to reduce risk of relapse in the treatment of opioid use disorder*

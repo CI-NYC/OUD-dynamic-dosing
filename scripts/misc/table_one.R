@@ -151,5 +151,4 @@ glue::glue(
   \\end{tabular}
   \\end{table}",
   .open =  "<", .close = ">"
-) |> 
-  clipr::write_clip()
+)
