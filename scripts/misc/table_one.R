@@ -22,11 +22,12 @@ baseline <- readRDS("data/drv/clean_visits_with_relapse_080922.rds") |>
   left_join(strata) |> 
   select(-switched_meds, -never_initiated, -rand_dt, -end_of_detox, -who, -site) 
 
-pmean = \(x, ...) sprintf("%0.1f\\%%", mean(x, na.rm = TRUE) * 100)
-cmean = \(x, ...) sprintf("%.2f", mean(x, na.rm = TRUE))
-csd = \(x, ...) sprintf("%.2f", sd(x, na.rm = TRUE))
+pmean <- \(x, ...) sprintf("%0.1f\\%%", mean(x, na.rm = TRUE) * 100)
+cmean <- \(x, ...) sprintf("%.2f", mean(x, na.rm = TRUE))
+csd <- \(x, ...) sprintf("%.2f", sd(x, na.rm = TRUE))
+cquantile <- \(x, p, ...) sprintf("%.2f", quantile(x, p, na.rm = TRUE))
 
-stats = function(data, ...) {
+stats <- function(data, ...) {
   summarise(data,
     n = n(), 
     trial_27 = pmean(project == "27"), 
@@ -58,20 +59,22 @@ stats = function(data, ...) {
     no_increases = cmean(no_increases), 
     dose_sd = csd(max_dose),
     dose = cmean(max_dose), 
+    dose_25 = cquantile(max_dose, 0.25),
+    dose_75 = cquantile(max_dose, 0.75),
     w12 = pmean(relapse_week12)
   )
 }
 
-bup = stats(filter(baseline, medicine == "bup"))
-met = stats(filter(baseline, medicine == "met"))
-bnu = stats(filter(baseline, medicine == "bup", !any_use))
-bu = stats(filter(baseline, medicine == "bup", any_use))
-bni = stats(filter(baseline, medicine == "bup", !any_increase))
-bi = stats(filter(baseline, medicine == "bup", any_increase))
-mnu = stats(filter(baseline, medicine == "met", !any_use))
-mu = stats(filter(baseline, medicine == "met", any_use))
-mni = stats(filter(baseline, medicine == "met", !any_increase))
-mi = stats(filter(baseline, medicine == "met", any_increase))
+bup <- stats(filter(baseline, medicine == "bup"))
+met <- stats(filter(baseline, medicine == "met"))
+bnu <- stats(filter(baseline, medicine == "bup", !any_use))
+bu <- stats(filter(baseline, medicine == "bup", any_use))
+bni <- stats(filter(baseline, medicine == "bup", !any_increase))
+bi <- stats(filter(baseline, medicine == "bup", any_increase))
+mnu <- stats(filter(baseline, medicine == "met", !any_use))
+mu <- stats(filter(baseline, medicine == "met", any_use))
+mni <- stats(filter(baseline, medicine == "met", !any_increase))
+mi <- stats(filter(baseline, medicine == "met", any_increase))
 
 # Produces LaTeX for table 1, written to the clipboard
 glue::glue(
@@ -110,6 +113,7 @@ glue::glue(
   History of anxiety disorder & <bup$anxiety> & <bnu$anxiety> & <bu$anxiety> & <bni$anxiety> & <bi$anxiety> \\\\ 
   Opioid withdrawl discomfort (1-4) & <bup$hwithdraw> (<bup$hwithdraw_sd>) & <bnu$hwithdraw> (<bnu$hwithdraw_sd>) & <bu$hwithdraw> (<bu$hwithdraw_sd>) & <bni$hwithdraw> (<bni$hwithdraw_sd>) & <bi$hwithdraw> (<bi$hwithdraw_sd>) \\\\ 
   Max dose (mg) & <bup$dose> (<bup$dose_sd>) & <bnu$dose> (<bnu$dose_sd>) & <bu$dose> (<bu$dose_sd>) & <bni$dose> (<bni$dose_sd>) & <bi$dose> (<bi$dose_sd>) \\\\ 
+  Max dose (mg) [IQR] & <bup$dose_25>, <bup$dose_75> & <bnu$dose_25>, <bnu$dose_75> & <bu$dose_25>, <bu$dose_75> & <bni$dose_25>, <bni$dose_75> & <bi$dose_25>, <bi$dose_75> \\\\
   No. dose increases & <bup$no_increases> (<bup$no_increases_sd>) & <bnu$no_increases> (<bnu$no_increases_sd>) & <bu$no_increases> (<bu$no_increases_sd>) & <bni$no_increases> (<bni$no_increases_sd>) & <bi$no_increases> (<bi$no_increases_sd>) \\\\ 
   Week of relapse & <bup$rweek> (<bup$rweek_sd>) & <bnu$rweek> (<bnu$rweek_sd>) & <bu$rweek> (<bu$rweek_sd>) & <bni$rweek> (<bni$rweek_sd>) & <bi$rweek> (<bi$rweek_sd>) \\\\ 
   Relapse by week 12 & <bup$w12> & <bnu$w12> & <bu$w12> & <bni$w12> & <bi$w12> \\\\ 
@@ -138,6 +142,7 @@ glue::glue(
   History of anxiety disorder & <met$anxiety> & <mnu$anxiety> & <mu$anxiety> & <mni$anxiety> & <mi$anxiety> \\\\ 
   Opioid withdrawl discomfort (1-4) & <met$hwithdraw> (<met$hwithdraw_sd>) & <mnu$hwithdraw> (<mnu$hwithdraw_sd>) & <mu$hwithdraw> (<mu$hwithdraw_sd>) & <mni$hwithdraw> (<mni$hwithdraw_sd>) & <mi$hwithdraw> (<mi$hwithdraw_sd>) \\\\ 
   Max dose (mg) & <met$dose> (<met$dose_sd>) & <mnu$dose> (<mnu$dose_sd>) & <mu$dose> (<mu$dose_sd>) & <mni$dose> (<mni$dose_sd>) & <mi$dose> (<mi$dose_sd>) \\\\ 
+  Max dose (mg) [IQR] & <met$dose_25>, <met$dose_75> & <mnu$dose_25>, <mnu$dose_75> & <mu$dose_25>, <mu$dose_75> & <mni$dose_25>, <mni$dose_75> & <mi$dose_25>, <mi$dose_75> \\\\
   No. dose increases & <met$no_increases> (<met$no_increases_sd>) & <mnu$no_increases> (<mnu$no_increases_sd>) & <mu$no_increases> (<mu$no_increases_sd>) & <mni$no_increases> (<mni$no_increases_sd>) & <mi$no_increases> (<mi$no_increases_sd>) \\\\ 
   Week of relapse & <met$rweek> (<met$rweek_sd>) & <mnu$rweek> (<mnu$rweek_sd>) & <mu$rweek> (<mu$rweek_sd>) & <mni$rweek> (<mni$rweek_sd>) & <mi$rweek> (<mi$rweek_sd>) \\\\ 
   Relapse by week 12 & <met$w12> & <mnu$w12> & <mu$w12> & <mni$w12> & <mi$w12> \\\\ 
