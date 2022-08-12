@@ -49,6 +49,7 @@ constant <- lmtp:::shift_trt(visits_wide, A, static_binary_off)
 node <- Sys.getenv("SGE_TASK_ID")
 task_list <- expand.grid(imp = 1:5, 
                          med = c("bup"), 
+                         project = c("27", "30", "51"),
                          tau = 2:11, 
                          strat = c("constant", "dynamic", "threshold", "hybrid"), 
                          stringsAsFactors = FALSE)
@@ -56,8 +57,7 @@ task_list <- expand.grid(imp = 1:5,
 task <- task_list[node, ]
 observed <- left_join(visits_wide, mice::complete(imputed, task$imp))
 observed <- observed[as.character(observed$medicine) == task$med, ]
-observed <- observed[as.character(observed$project) %in% c("30", "51"), ]
-observed$project <- droplevels(observed$project)
+observed <- observed[as.character(observed$project) == task$project, ]
 
 shifted <- list("dynamic" = dynamic, 
                 "threshold" = threshold, 
@@ -65,14 +65,19 @@ shifted <- list("dynamic" = dynamic,
                 "constant" = constant)[[task$strat]]
 shifted <- left_join(shifted, mice::complete(imputed, task$imp))
 shifted <- shifted[as.character(shifted$medicine) == task$med, ]
-shifted <- shifted[as.character(shifted$project) %in% c("30", "51"), ]
-shifted$project <- droplevels(shifted$project)
+shifted <- shifted[as.character(shifted$project) == task$project, ]
 
-A <- glue("wk{2:task$tau}.dose_increase_this_week")
-W <- c(demog, comorbidities, "project")
+if (task$tau <= 4) {
+  A <- glue("wk{2:task$tau}.dose_increase_this_week")
+  L <- lapply(2:task$tau, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
+  Y <- glue("wk{3:(task$tau + 1)}.relapse_this_week")
+} else {
+  A <- glue("wk{2:4}.dose_increase_this_week")
+  L <- lapply(2:4, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
+  Y <- glue("wk{c(3:4, task$tau + 1)}.relapse_this_week")
+}
 
-L <- lapply(2:task$tau, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
-Y <- glue("wk{3:(task$tau + 1)}.relapse_this_week")
+W <- c(demog, comorbidities)
 
 stack <- c("SL.glm", "SL.mean", "SL.lightgbm", "SL.earth")
 
@@ -88,4 +93,4 @@ fit <- lmtp_sdr(observed,
                 learners_trt = stack)
 
 saveRDS(list(seed = seed, fit = fit), 
-        paste0("data/fits/30_51/", do.call(paste, c(task, sep = "_")), ".rds"))
+        paste0("data/fits/by_trial_limited/", do.call(paste, c(task, sep = "_")), ".rds"))

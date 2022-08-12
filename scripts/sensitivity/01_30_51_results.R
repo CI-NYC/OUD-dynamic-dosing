@@ -111,7 +111,7 @@ wrap_plots(
         size = 0.2
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
-      scale_y_continuous(limits = c(-0.1, 0.15)) + 
+      scale_y_continuous(limits = c(-0.1, 0.2)) + 
       scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
                          limits = c(2.75, 12.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(

@@ -15,7 +15,7 @@ for (med in c("met", "bup")) {
       fits[[med]][[strat]][[imp]] <- list()
       for (t in 1:10) {
         fits[[med]][[strat]][[imp]][[t]] <- 
-          readRDS(glue("data/fits/{imp}_{med}_{t+1}_{strat}.rds"))
+          readRDS(glue("data/fits/combined/{imp}_{med}_{t+1}_{strat}.rds"))
       }
     }
   }

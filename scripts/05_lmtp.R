@@ -3,6 +3,7 @@ library(glue)
 suppressPackageStartupMessages(library(tidyverse))
 
 source("scripts/covariates.R")
+source("R/SL.lightgbm.R")
 
 visits_wide <- readRDS("data/drv/clean_weeks_with_relapse_wide_080922.rds")
 imputed <- readRDS("data/drv/clean_patients_imputed_080922.rds")
@@ -74,7 +75,7 @@ if (task$med == "bup") {
 L <- lapply(2:task$tau, function(x) c(glue("wk{x-1}.dose_this_week"), glue("wk{x}.use_this_week")))
 Y <- glue("wk{3:(task$tau + 1)}.relapse_this_week")
 
-stack <- c("SL.glm", "SL.mean", "SL.ranger", "SL.earth")
+stack <- c("SL.glm", "SL.mean", "SL.lightgbm", "SL.glmnet", "SL.earth")
 
 seed <- round(runif(1, 1000, 1e5))
 set.seed(seed)
@@ -88,4 +89,4 @@ fit <- lmtp_sdr(observed,
                 learners_trt = stack)
 
 saveRDS(list(seed = seed, fit = fit), 
-        paste0("data/fits/", do.call(paste, c(task, sep = "_")), ".rds"))
+        paste0("data/fits/combined", do.call(paste, c(task, sep = "_")), ".rds"))

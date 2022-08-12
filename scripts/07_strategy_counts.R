@@ -11,7 +11,7 @@ fits <- list()
 for (med in c("met", "bup")) {
   fits[[med]] <- list()
   for (strat in c("constant", "dynamic", "threshold", "hybrid")) {
-    fits[[med]][[strat]] <- readRDS(glue("data/fits/1_{med}_11_{strat}.rds"))$fit
+    fits[[med]][[strat]] <- readRDS(glue("data/fits/combined/1_{med}_11_{strat}.rds"))$fit
   }
 }
 
