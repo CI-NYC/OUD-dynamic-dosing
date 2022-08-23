@@ -1,6 +1,6 @@
-demog = c("sex", "age", "xrace")
+demog <- c("sex", "age", "xrace")
 
-treatment_info = c(
+treatment_info <- c(
   "project",
   "site",
   "trt",
@@ -12,7 +12,7 @@ treatment_info = c(
   "never_initiated"
 )
 
-comorbidities = c(
+comorbidities <- c(
   "hwithdraw",
   "alcdisorder",
   "cocdisorder",
@@ -28,7 +28,7 @@ comorbidities = c(
   "ivdrug"
 )
 
-outcomes = c(
+outcomes <- c(
   "relapse_overall",
   "relapse_date",
   "relapse_this_week",
@@ -40,7 +40,7 @@ outcomes = c(
   "fusedt24"
 )
 
-visit_data = c(
+visit_data <- c(
   "use_today",
   "when",
   "day_of_intervention",
@@ -54,7 +54,7 @@ visit_data = c(
   "any_dose"
 )
 
-weekly_indicators = c(
+weekly_indicators <- c(
   "use_this_week",
   "relapsed",
   "dose_change_since_last_week",
