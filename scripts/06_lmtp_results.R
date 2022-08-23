@@ -201,6 +201,7 @@ wrap_plots(
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
       scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
                          limits = c(2.75, 12.25), expand = c(0, .2)) + 
+      scale_y_continuous(limits = c(0, 0.65)) + 
       # scale_linetype_manual(
       #   values = c("solid", "dashed", "dotted", "dotdash")
       # ) + 
@@ -300,6 +301,7 @@ wrap_plots(
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
       scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
                          limits = c(2.75, 12.25), expand = c(0, .2)) + 
+      scale_y_continuous(limits = c(0, 0.65)) + 
       # scale_linetype_manual(
       #   values = c("solid", "dashed", "dotted", "dotdash")
       # ) + 

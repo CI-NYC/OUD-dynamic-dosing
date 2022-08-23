@@ -67,6 +67,7 @@ ragg::agg_png("figures/27_sdr_bup_080922.png", width = 8, height = 4.5, units = 
 wrap_plots(
   {
     map_dfr(fits$`27`, combine, .id = "strategy") |>
+      filter(label <= 6) |> 
       mutate(strategy = factor(case_when(
         strategy == "constant" ~ "d4", 
         strategy == "dynamic" ~ "d1", 
@@ -77,8 +78,8 @@ wrap_plots(
       ggplot(aes(x = label, y = 1 - theta, color = strategy)) +
       geom_step(size = 0.2) + 
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
-      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
-                         limits = c(2.75, 12.25), expand = c(0, .2)) + 
+      scale_x_continuous(breaks = 3:6, labels = c("Wk. 3", 4:6), 
+                         limits = c(2.75, 6.25), expand = c(0, .2)) + 
       # scale_linetype_manual(
       #   values = c("solid", "dashed", "dotted", "dotdash")
       # ) + 
@@ -104,6 +105,7 @@ wrap_plots(
     map(c(dynamic = "dynamic", threshold = "threshold", hybrid = "hybrid"), 
         \(x) fits$`27`[[x]]) |>
       map_dfr(\(x) contrast(x, ref = fits$`27`$constant), .id = "strategy") |> 
+      filter(label <= 6) |> 
       mutate(
         strategy = factor(case_when(
           strategy == "constant" ~ "d4", 
@@ -128,8 +130,8 @@ wrap_plots(
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
       scale_y_continuous(limits = c(-0.25, 0.05)) + 
-      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
-                         limits = c(2.75, 12.25), expand = c(0, 0.2)) + 
+      scale_x_continuous(breaks = 3:6, labels = c("Wk. 3", 4:6), 
+                         limits = c(2.75, 6.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(
       #   drop = FALSE, 
       #   values = c("solid", "dashed", "dotted", "dotdash")
@@ -165,6 +167,7 @@ ragg::agg_png("figures/30_sdr_bup_080922.png", width = 8, height = 4.5, units = 
 wrap_plots(
   {
     map_dfr(fits$`30`, combine, .id = "strategy") |>
+      filter(label <= 6) |> 
       mutate(strategy = factor(case_when(
         strategy == "constant" ~ "d4", 
         strategy == "dynamic" ~ "d1", 
@@ -175,8 +178,8 @@ wrap_plots(
       ggplot(aes(x = label, y = 1 - theta, color = strategy)) +
       geom_step(size = 0.2) + 
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
-      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
-                         limits = c(2.75, 12.25), expand = c(0, .2)) + 
+      scale_x_continuous(breaks = 3:6, labels = c("Wk. 3", 4:6), 
+                         limits = c(2.75, 6.25), expand = c(0, .2)) + 
       # scale_linetype_manual(
       #   values = c("solid", "dashed", "dotted", "dotdash")
       # ) + 
@@ -226,8 +229,8 @@ wrap_plots(
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
       scale_y_continuous(limits = c(-0.13, 0.2)) + 
-      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
-                         limits = c(2.75, 12.25), expand = c(0, 0.2)) + 
+      scale_x_continuous(breaks = 3:6, labels = c("Wk. 3", 4:6), 
+                         limits = c(2.75, 6.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(
       #   drop = FALSE, 
       #   values = c("solid", "dashed", "dotted", "dotdash")
@@ -263,6 +266,7 @@ ragg::agg_png("figures/51_sdr_bup_080922.png", width = 8, height = 4.5, units = 
 wrap_plots(
   {
     map_dfr(fits$`51`, combine, .id = "strategy") |>
+      filter(label <= 6) |> 
       mutate(strategy = factor(case_when(
         strategy == "constant" ~ "d4", 
         strategy == "dynamic" ~ "d1", 
@@ -273,8 +277,8 @@ wrap_plots(
       ggplot(aes(x = label, y = 1 - theta, color = strategy)) +
       geom_step(size = 0.2) + 
       geom_point(size = 0.2, aes(shape = strategy, color = strategy)) + 
-      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
-                         limits = c(2.75, 12.25), expand = c(0, .2)) + 
+      scale_x_continuous(breaks = 3:6, labels = c("Wk. 3", 4:6), 
+                         limits = c(2.75, 6.25), expand = c(0, .2)) + 
       # scale_linetype_manual(
       #   values = c("solid", "dashed", "dotted", "dotdash")
       # ) + 
@@ -324,8 +328,8 @@ wrap_plots(
       ) + 
       geom_hline(yintercept = 0, color = "grey", size = 0.2) + 
       scale_y_continuous(limits = c(-0.18, 0.23)) + 
-      scale_x_continuous(breaks = 3:12, labels = c("Wk. 3", 4:12), 
-                         limits = c(2.75, 12.25), expand = c(0, 0.2)) + 
+      scale_x_continuous(breaks = 3:6, labels = c("Wk. 3", 4:6), 
+                         limits = c(2.75, 6.25), expand = c(0, 0.2)) + 
       # scale_linetype_manual(
       #   drop = FALSE, 
       #   values = c("solid", "dashed", "dotted", "dotdash")
